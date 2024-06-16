@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,flash,redirect,url_for
+from flask import Flask,render_template,request,flash,redirect,url_for,session
 
 from werkzeug.security import generate_password_hash,check_password_hash
 
@@ -7,11 +7,18 @@ from app import app,db
 from models import User,AdRequest,Campaign,Profile
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if 'user_id' in session:
+       user_id=session['user_id']
+       return render_template('index.html',user_id=user_id)
+    else:
+        flash('Kindly login first.')
+        return redirect(url_for('login'))
+
+
 @app.route('/login')
 def login():
     return render_template('login.html')
-@app.route('/login',methods={'POST'})
+@app.route('/login',methods=['POST'])
 def login_post():
     username=request.form.get('username')
     password=request.form.get('password')
@@ -25,6 +32,9 @@ def login_post():
     if not check_password_hash(user.passhash,password):
         flash('Password is incorrect')
         return redirect(url_for('login'))
+    
+    session['user_id']=user.id
+    flash('Login Successfully done')
     return redirect(url_for('index'))
 
 
@@ -32,7 +42,7 @@ def login_post():
 @app.route('/register')
 def register():
     return render_template('register.html')
-@app.route('/register',methods={'POST'})
+@app.route('/register',methods=['POST'])
 def register_post():
     username=request.form.get('username')
     password=request.form.get('password')

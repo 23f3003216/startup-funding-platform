@@ -9,8 +9,9 @@ class User(db.Model):
     username=db.Column(db.String(32),unique=True)
     passhash=db.Column(db.String(256),nullable=False)
     name=db.Column(db.String(64),nullable=True)
-    is_admin=db.Column(db.Boolean,nullable=False,default=False)
-    user_type=db.Column(Enum('sponsor','influencer'),nullable=False)
+    user_type=db.Column(Enum('sponsor','influencer','admin'),nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+
     def is_sponsor(self):
         return self.user_type=='sponsor'
     def is_influencer(self):
@@ -48,16 +49,16 @@ class Profile(db.Model):
     reach=db.Column(db.Integer,nullable=False)
     
     user=relationship('User',backref='profile')
+    with app.app_context():
+        db.create_all()
+        admin=User.query.filter_by(user_type='admin').first()
+        if not admin:
+            password_hash=generate_password_hash('admin')
+            admin=User(username='admin',passhash=password_hash,name='Admin',user_type='admin',is_admin=True)
+            db.session.add(admin)
+            db.session.commit()
 
 
-with app.app_context():
-    db.create_all()
-    admin=User.query.filter_by(is_admin=True).first()
-    if not admin:
-        password_hash=generate_password_hash('admin')
-        admin=User(username='admin',passhash=password_hash,name='Admin',is_admin=True,user_type='admin')
-        db.session.add(admin)
-        db.session.commit
 
 
 
