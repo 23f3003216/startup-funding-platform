@@ -2,6 +2,7 @@ from app import app
 from app import db
 from sqlalchemy import String,Boolean,Enum,Integer,Column,ForeignKey
 from sqlalchemy.orm import relationship
+from werkzeug.security import generate_password_hash
 
 class User(db.Model):
     id=db.Column(db.Integer,primary_key=True)
@@ -9,9 +10,7 @@ class User(db.Model):
     passhash=db.Column(db.String(256),nullable=False)
     name=db.Column(db.String(64),nullable=True)
     is_admin=db.Column(db.Boolean,nullable=False,default=False)
-    user_type=db.Column(Enum('admin','sponsor','influencer'),nullable=False)
-    def is_admin(self):
-        return self.user_type=='admin'
+    user_type=db.Column(Enum('sponsor','influencer'),nullable=False)
     def is_sponsor(self):
         return self.user_type=='sponsor'
     def is_influencer(self):
@@ -49,6 +48,16 @@ class Profile(db.Model):
     reach=db.Column(db.Integer,nullable=False)
     
     user=relationship('User',backref='profile')
+
+
+with app.app_context():
+    db.create_all()
+    admin=User.query.filter_by(is_admin=True).first()
+    if not admin:
+        password_hash=generate_password_hash('admin')
+        admin=User(username='admin',passhash=password_hash,name='Admin',is_admin=True,user_type='admin')
+        db.session.add(admin)
+        db.session.commit
 
 
 
