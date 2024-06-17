@@ -42,34 +42,65 @@ def login_post():
 
 
 
-@app.route('/register')
-def register():
-    return render_template('register.html')
-
-@app.route('/register',methods=['POST'])
-def register_post():
-    username=request.form.get('username')
-    password=request.form.get('password')
-    confirm_password=request.form.get('confirm_password')
-    name=request.form.get('name')
-    user_type=request.form.get('user_type')
-    if not username or not password or not confirm_password or not user_type:
+@app.route('/register/influencer',methods=(['GET','POST']))
+def register_influencer():
+    if request.method=='GET':
+        return render_template('register_influencer.html')
+    elif request.method=='POST':
+        username=request.form.get('username')
+        password=request.form.get('password')
+        confirm_password=request.form.get('confirm_password')
+        name=request.form.get('name')
+        platform=request.form.get('platform')
+    if not username or not password or not confirm_password or not platform:
         flash('Please fill out all the details.')
-        return redirect(url_for('register'))
+        return redirect(url_for('register_influencer'))
     if password!=confirm_password:
         flash('Passwords do not match.')
-        return redirect(url_for('register'))
+        return redirect(url_for('register_influencer'))
     user=User.query.filter_by(username=username).first()
     if user:
         flash('Username is already taken.')
-        return redirect(url_for('register'))
+        return redirect(url_for('register_influencer'))
     password_hash=generate_password_hash(password)
 
-    new_user=User(username=username,passhash=password_hash,name=name,user_type=user_type)
+    new_user=User(username=username,passhash=password_hash,name=name,platform=platform)
+    profile=Profile(name=username,category='Influencer',niche='platform',reach=0,user=new_user)
     db.session.add(new_user)
+    db.session.add(profile)
     db.session.commit()
+    flash('Registeration as an Influencer completed Successfully.Please login now.')
     return redirect (url_for('login'))
 
+@app.route('/register/sponsor',methods=['GET','POST'])
+def register_sponsor():
+    if request.method=='GET':
+        return render_template('register_sponsor.html')
+    elif request.method=='POST':
+        username=request.form.get('username')
+        password=request.form.get('password')
+        confirm_password=request.form.get('confirm_password')
+        name=request.form.get('name')
+        industry=request.form.get('industry')
+    if not username or not password or not confirm_password or not industry:
+        flash('Please fill out all the details.')
+        return redirect(url_for('register_sponsor'))
+    if password!=confirm_password:
+        flash('Passwords do not match.')
+        return redirect(url_for('register_sponsor'))
+    user=User.query.filter_by(username=username).first()
+    if user:
+        flash('Username is already taken.')
+        return redirect(url_for('register_sponsor'))
+    password_hash=generate_password_hash(password)
+
+    new_user=User(username=username,passhash=password_hash,name=name,industry=industry)
+    profile=Profile(name=username,category='Sponsor',niche=industry,reach=0,user=new_user)
+    db.session.add(new_user)
+    db.session.add(profile)
+    db.session.commit()
+    flash('Registeration as a Sponsor completed Successfully.Please login now.')
+    return redirect (url_for('login'))
 
 
 
