@@ -74,8 +74,13 @@ def register_post():
 
 
 @app.route('/')
+@auth_required
 def index():
-        return redirect(url_for('login'))
+        user=User.query.get(session['user_id'])
+        if user.is_admin:
+           return redirect (url_for('admin'))
+        return render_template('index.html')
+
 
 
 @app.route('/profile',methods=['GET','POST'])
@@ -129,6 +134,27 @@ def logout():
     flash('Successfully Logged Out')
     return redirect(url_for('login'))
   
+@app.route('/admin')
+@auth_required
+def admin():
+    total_users=User.query.count()
+    total_sponsors=User.query.filter_by(user_type='sponsor').count()
+    total_influencers=User.query.filter_by(user_type='influencer').count()
+    total_campaigns=Campaign.query.count()
+    total_public_campaigns=Campaign.query.filter_by(visibility='public').count()
+    total_private_campaigns=Campaign.query.filter_by(visibility='private').count()
+    total_ad_requests=AdRequest.query.count()
+    total_pending_requests=AdRequest.query.filter_by(status='Pending').count()
+    total_accepted_requests=AdRequest.query.filter_by(status='Accepted').count()
+    total_rejected_requests=AdRequest.query.filter_by(status='Rejected').count()
+    flagged_users=User.query.filter_by(flagged=True).count()
+    flagged_campaigns=Campaign.query.filter_by(flagged=True).count()
+
+    return render_template('admin_dashboard.html',total_users=total_users, total_sponsors= total_sponsors,total_influencers=total_influencers,total_campaigns=total_campaigns,
+                       total_public_campaigns=total_public_campaigns, total_private_campaigns=total_private_campaigns, total_ad_requests=total_ad_requests,
+                           total_pending_requests=total_pending_requests,total_accepted_requests=total_accepted_requests,total_rejected_requests=total_rejected_requests,
+                           flagged_users=flagged_users,flagged_campaigns=flagged_campaigns)
+
 
     
     

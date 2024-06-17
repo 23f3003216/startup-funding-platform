@@ -11,6 +11,7 @@ class User(db.Model):
     name=db.Column(db.String(64),nullable=True)
     user_type=db.Column(Enum('sponsor','influencer','admin'),nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    flagged=db.Column(db.Boolean,default=False)
 
     def is_sponsor(self):
         return self.user_type=='sponsor'
@@ -26,6 +27,7 @@ class Campaign(db.Model):
     budget=db.Column(db.Float,nullable=False)
     visibility=db.Column(Enum('public','private'),nullable=False,default='public')
     sponsor_id=db.Column(db.Integer,ForeignKey('user.id'),nullable=False)
+    flagged=db.Column(db.Boolean,default=False)
 
     sponsor=relationship('User',backref='campaigns')
 

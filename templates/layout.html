@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <title>
-        {% block name %}
+        {% block title %}
             Sponsor & Influencer Co-Ordination Platform
         {% endblock %}
     </title>
@@ -20,16 +20,33 @@
           </button>
           <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              {% if 'user_id' in session %}
               <li class="nav-item">
                 <a class="nav-link active" aria-current="page" href="{{url_for('login')}}">Login</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('register')}}">Register</a>
+                <a class="nav-link" href="{{url_for('profile')}}">Register</a>
+              </li>
+                
+          
+                
+              {% else %}
+              </li>
+              <li class="nav-item">
+               <a class="nav-link" href="{{url_for('register')}}">Register</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="{{url_for('login')}}">Login</a>
+              </li>
+                
+              {% endif %}
+         
               </li>
             </ul>
           </div>
         </div>
       </nav>
+      
       {% with messages = get_flashed_messages() %}
       {% if messages %}
      
