@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash,check_password_hash
 from functools import wraps
 from app import app,db
 
-from models import User,AdRequest,Campaign,Profile
+from models import User,AdRequest,Campaign,Admin,Influencer,Sponsor
 
 def auth_required(func):
     @wraps(func)
@@ -38,6 +38,8 @@ def login_post():
     
     session['user_id']=user.id
     flash('Login Successfully done')
+    if user.is_admin:
+        return redirect(url_for('admin'))
     return redirect(url_for('index'))
 
 
@@ -52,25 +54,27 @@ def register_influencer():
         confirm_password=request.form.get('confirm_password')
         name=request.form.get('name')
         platform=request.form.get('platform')
-    if not username or not password or not confirm_password or not platform:
-        flash('Please fill out all the details.')
-        return redirect(url_for('register_influencer'))
-    if password!=confirm_password:
-        flash('Passwords do not match.')
-        return redirect(url_for('register_influencer'))
-    user=User.query.filter_by(username=username).first()
-    if user:
-        flash('Username is already taken.')
-        return redirect(url_for('register_influencer'))
-    password_hash=generate_password_hash(password)
+        category = request.form['category']
+        niche = request.form['niche']
+        reach = request.form.get('reach',0)
+        if not username or not password or not confirm_password or not platform:
+           flash('Please fill out all the details.')
+           return redirect(url_for('register_influencer'))
+        if password!=confirm_password:
+            flash('Passwords do not match.')
+            return redirect(url_for('register_influencer'))
+        user=User.query.filter_by(username=username).first()
+        if user:
+            flash('Username is already taken.')
+            return redirect(url_for('register_influencer'))
+        password_hash=generate_password_hash(password)
 
-    new_user=User(username=username,passhash=password_hash,name=name,platform=platform)
-    profile=Profile(name=username,category='Influencer',niche='platform',reach=0,user=new_user)
-    db.session.add(new_user)
-    db.session.add(profile)
-    db.session.commit()
-    flash('Registeration as an Influencer completed Successfully.Please login now.')
-    return redirect (url_for('login'))
+
+        new_influencer = Influencer(username=username, passhash=password_hash, name=name, platform=platform,category=category,niche=niche,reach=int(reach) if reach else None )
+        db.session.add(new_influencer)
+        db.session.commit()
+        flash('Registeration as an Influencer completed Successfully.Please login now.')
+        return redirect (url_for('login'))
 
 @app.route('/register/sponsor',methods=['GET','POST'])
 def register_sponsor():
@@ -82,25 +86,24 @@ def register_sponsor():
         confirm_password=request.form.get('confirm_password')
         name=request.form.get('name')
         industry=request.form.get('industry')
-    if not username or not password or not confirm_password or not industry:
-        flash('Please fill out all the details.')
-        return redirect(url_for('register_sponsor'))
-    if password!=confirm_password:
-        flash('Passwords do not match.')
-        return redirect(url_for('register_sponsor'))
-    user=User.query.filter_by(username=username).first()
-    if user:
-        flash('Username is already taken.')
-        return redirect(url_for('register_sponsor'))
-    password_hash=generate_password_hash(password)
+        if not username or not password or not confirm_password or not industry:
+           flash('Please fill out all the details.')
+           return redirect(url_for('register_sponsor'))
+        if password!=confirm_password:
+           flash('Passwords do not match.')
+           return redirect(url_for('register_sponsor'))
+        user=User.query.filter_by(username=username).first()
+        if user:
+           flash('Username is already taken.')
+           return redirect(url_for('register_sponsor'))
+        password_hash=generate_password_hash(password)
 
-    new_user=User(username=username,passhash=password_hash,name=name,industry=industry)
-    profile=Profile(name=username,category='Sponsor',niche=industry,reach=0,user=new_user)
-    db.session.add(new_user)
-    db.session.add(profile)
-    db.session.commit()
-    flash('Registeration as a Sponsor completed Successfully.Please login now.')
-    return redirect (url_for('login'))
+
+        new_sponsor = Sponsor(username=username, passhash=password_hash, name=name, industry=industry)
+        db.session.add(new_sponsor)
+        db.session.commit()
+        flash('Registeration as a Sponsor completed Successfully.Please login now.')
+        return redirect (url_for('login'))
 
 
 

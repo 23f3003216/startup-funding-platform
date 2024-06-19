@@ -6,7 +6,7 @@ app = Flask(__name__)
 import config
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-from models import User,Campaign,AdRequest,Profile
+from models import User,Campaign,AdRequest,Influencer,Sponsor,Admin
 with app.app_context():
         db.create_all()
 
