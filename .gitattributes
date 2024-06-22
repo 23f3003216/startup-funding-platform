@@ -1,0 +1,17 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+*.py text
+*.ini text
+*.md text
+*.html text
+*.css text
+*.js text
+
+# Declare binary files - do not modify their line endings
+*.jpg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.pdf binary

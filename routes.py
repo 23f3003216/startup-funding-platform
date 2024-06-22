@@ -189,6 +189,17 @@ def admin():
                            total_pending_requests=total_pending_requests,total_accepted_requests=total_accepted_requests,total_rejected_requests=total_rejected_requests,
                            flagged_users=flagged_users,flagged_campaigns=flagged_campaigns)
 
-
-    
-    
+@app.route('/influencer/dashboard')
+@auth_required
+def influencer_dashboard():
+    user_id=session.get('user_id')
+    if not user_id:
+        flash('Kindly login first')
+        return redirect(url_for('login'))
+    influencer=influencer.query.get(user_id)
+    if not influencer:
+        flash('Not Found!','danger')
+        return redirect(url_for('login'))
+    active_campaigns=[]
+    new_requests=[]
+    return render_template('influencer_dashboard.html',user=influencer,active_campaigns=active_campaigns,new_requests=new_requests)

@@ -4,9 +4,8 @@ from sqlalchemy import String, Boolean, Enum, Integer, Column, ForeignKey, Text,
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
-Base = declarative_base()
 
-class User(Base):
+class User(db.Model):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
     username = Column(String(32), unique=True)
@@ -84,7 +83,7 @@ class Influencer(User):
 
     influencer_ad_requests = relationship('AdRequest', backref='influencer_relation', overlaps="influencer_ad_requests,influencer_relation")
 
-class Campaign(Base):
+class Campaign(db.Model):
     __tablename__ = 'campaign'
     id = Column(Integer, primary_key=True)
     name = Column(String(256), unique=False)
@@ -98,7 +97,7 @@ class Campaign(Base):
 
     sponsor = relationship('Sponsor', backref='campaigns', overlaps="sponsor_campaigns,sponsor_relation")
 
-class AdRequest(Base):
+class AdRequest(db.Model):
     __tablename__ = 'ad_request'
     id = Column(Integer, primary_key=True)
     campaign_id = Column(Integer, ForeignKey('campaign.id'), nullable=False)
