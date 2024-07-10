@@ -1,0 +1,44 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    View Campaign
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="display-4">{{campaign.name}}</h1>
+    <p>Budget: {{campaign.budget}}</p>
+    {% if ad_request.status == 'Assigned' %}
+    <p>Influencer Assigned: {{ ad_request.influencer.name }}</p>
+    {% endif %}
+    <h2>Create Ad Request</h2>
+    <form method="post">
+        <div class="form-group">
+            <label for="ad_name" class="form-label">Ad Name</label>
+            <input type="text" name="ad_name" id="ad_name" required><br>
+        </div>
+        <div class="form-group">
+            <label for="description" class="form-label">Description</label>
+            <input type="text" name="description" id="description" required><br>
+        </div>
+        <div class="form-group">
+            <label for="terms" class="form-label">Terms</label>
+            <input type="text" name="terms" id="terms" required><br>
+        </div>
+        <div class="form-group">
+            <label for="payment" class="form-label">Payment</label>
+            <input type="text" name="payment" id="payment" required><br>
+        </div>
+        <div class="form-group">
+            <label for="influencer_id" class="form-label">Influencer Assigned</label>
+            <input type="text" name="influencer_id" id="influencer_id"><br>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Create Ad Request</button>
+            <a href="{{url_for('find_influencers')}}" class="btn btn-secondary">Find Influencer</a>
+            <a href="{{url_for('sponsor_dashboard')}}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

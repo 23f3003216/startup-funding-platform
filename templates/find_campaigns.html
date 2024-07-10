@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Find Campaigns
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="display-1">Find Campaigns</h1>
+    <form action="{{url_for('find_campaigns')}}" method="post">
+        <div class="mb-3">
+            <label for="searchQuery" class="form-label">Search Query</label>
+            <input type="text" class="form-control" id="searchQuery" name="searchQuery" placeholder="Enter Search Query">
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+</div>
+{% endblock %}

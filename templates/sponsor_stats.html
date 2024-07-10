@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Sponsor Stats
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="display-1">Sponsor Stats</h1>
+    <p>Total Campaigns:{{stats.total_campaigns}}</p>
+    <p>Active Campaigns:{{stats.active_campaigns}}</p>
+    <p>Completed Campaigns:{{stats.completed_campaigns}}</p>
+</div>
+<a href="{{url_for('sponsor_dashboard')}}" class="btn btn-primary">Back to Dashboard</a>
+{% endblock %}

@@ -1,18 +1,19 @@
+from datetime import date,timedelta
 from app import app,db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import String, Boolean, Enum, Integer, Column, ForeignKey, Text, Date, Float
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
+from flask_login import UserMixin
 
-
-class User(db.Model):
+class User(db.Model,UserMixin):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
     username = Column(String(32), unique=True)
     passhash = Column(String(256), nullable=False)
     name = Column(String(64), nullable=True)
     flagged = Column(Boolean, default=False)
-    user_type = Column(String(50))
+    user_type = Column(String(50),nullable=False,default='user')
 
     __mapper_args__ = {
         'polymorphic_identity': 'user',
@@ -23,6 +24,7 @@ class User(db.Model):
         self.username = username
         self.passhash = passhash
         self.name = name
+        self.user_type='user'
 
     def is_administrator(self):
         return False
@@ -32,11 +34,15 @@ class Admin(User):
     id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     
     __mapper_args__ = {
-        'polymorphic_identity': 'admin'
+        'polymorphic_identity': 'admin',
     }
 
     def __init__(self, username, passhash, name=None):
         super().__init__(username, passhash, name)
+        self.username = username
+        self.passhash = passhash
+        self.name = name
+        self.user_type='admin'
 
     def is_administrator(self):
         return True
@@ -54,6 +60,7 @@ class Sponsor(User):
 
     def __init__(self, username, passhash, name=None, industry=None):
         super().__init__(username, passhash, name)
+        self.user_type='sponsor'
         self.sponsor_type = 'sponsor'
         self.industry = industry
 
@@ -67,6 +74,7 @@ class Influencer(User):
     category = Column(String(64), nullable=False)
     niche = Column(String(64), nullable=False)
     reach = Column(Integer, nullable=True)
+    followers = db.Column(db.Integer, nullable=True)
 
     __mapper_args__ = {
         'polymorphic_identity': 'influencer',
@@ -75,25 +83,51 @@ class Influencer(User):
 
     def __init__(self, username, passhash, name=None, platform=None, category=None, niche=None, reach=None):
         super().__init__(username, passhash, name)
+        self.user_type='influencer'
         self.influencer_type = 'influencer'
         self.platform = platform
         self.category = category
         self.niche = niche
         self.reach = reach
+    def is_authenticated(self):
+        return True  
+
+    def is_active(self):
+        return True  
+
+    def is_anonymous(self):
+        return False  
+
+    def get_id(self):
+        return str(self.id)
 
     influencer_ad_requests = relationship('AdRequest', backref='influencer_relation', overlaps="influencer_ad_requests,influencer_relation")
+
+
+class InfluencerDetails(db.Model):
+    __tablename__ = 'influencer_details'
+    id=Column(Integer,primary_key=True)
+    user_id = Column(Integer, ForeignKey('influencer.id'), unique=True)
+    profile_picture = Column(String(256), nullable=True)
+    earnings = Column(Float, default=0.0)
+    rating= Column(Float, default=0.0)
+
+    influencer=relationship('Influencer',backref='details')
+
+
 
 class Campaign(db.Model):
     __tablename__ = 'campaign'
     id = Column(Integer, primary_key=True)
     name = Column(String(256), unique=False)
     description = Column(Text, nullable=True)
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date, nullable=False)
-    budget = Column(Float, nullable=False)
+    start_date = Column(Date, nullable=False,default=date.today())
+    end_date = Column(Date, nullable=False,default=lambda:date.today()+timedelta(days=30))
+    budget = Column(Float, nullable=False,default=0.0)
     visibility = Column(Enum('public', 'private', name='visibility_enum'), nullable=False, default='public')
     sponsor_id = Column(Integer, ForeignKey('sponsor.id'), nullable=False)
     flagged = Column(Boolean, default=False)
+    status = Column(String(20))
 
     sponsor = relationship('Sponsor', backref='campaigns', overlaps="sponsor_campaigns,sponsor_relation")
 
@@ -104,11 +138,31 @@ class AdRequest(db.Model):
     influencer_id = Column(Integer, ForeignKey('user.id'), nullable=False)
     requirements = Column(Text, nullable=True)
     payment_amount = Column(Float, nullable=False)
-    status = Column(Enum('Pending', 'Accepted', 'rejected', name='status_enum'), nullable=False, default='Pending')
+    status = Column(Enum('Pending', 'Accepted', 'Rejected', name='status_enum'), nullable=False, default='Pending')
 
     campaign = relationship('Campaign', backref='ad_requests')
     influencer = relationship('Influencer', backref='ad_requests', overlaps="influencer_ad_requests,influencer_relation")
 
+def update_user_types():
+    with app.app_context():
+        users = User.query.all()
+        for user in users:
+            if user.user_type is None:
+                if Admin.query.filter_by(id=user.id).first():
+                    user.user_type = 'admin'
+                elif Sponsor.query.filter_by(id=user.id).first():
+                    user.user_type = 'sponsor'
+                elif Influencer.query.filter_by(id=user.id).first():
+                    user.user_type = 'influencer'
+                else:
+                    user.user_type = 'user'
+                db.session.add(user)
+        db.session.commit()
+
+
+
+
 with app.app_context():
         db.create_all()
+        update_user_types()
     

@@ -1,0 +1,45 @@
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color:#800080;
+}
+
+.navbar {
+    margin-bottom: 20px; 
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+}
+
+.navbar-toggler-icon {
+    background-color: #0d824d; 
+}
+
+.nav-link {
+    color: #c5125d; 
+    font-weight: bold; 
+}
+
+.nav-link:hover {
+    color: #cf1111; 
+}
+
+
+.container {
+    margin-top: 20px; 
+    background-color: #f9e955; 
+    padding: 20px; 
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(154, 241, 83, 0.1); 
+}
+
+
+.alert {
+    margin-top: 10px; 
+    margin-bottom: 10px; 
+}
+
+.btn {
+    font-weight: bold; 
+}
