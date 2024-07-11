@@ -18,14 +18,39 @@
         <label for="budget" class="form-label">Budget</label>    
         <input type="number" name="budget" id="budget" required><br><br>
         <label for="visibility" class="form-label">Visibility</label>  
-        <select id="visibility" name="visibility">
+        <select id="visibility" name="visibility" onchange="toggleNicheSelect(this.value)">
             <option value="public">Public</option>
             <option value="private">Private</option>
         </select>
+        <div id="nicheSelect" style="display:none">
+            <label for="niche" class="form-label">Select Niche</label>  
+            <select id="niche" name="niche">
+                <option value="COOKING">Cooking</option>
+                <option value="TECHNOLOGY">Technology</option>
+                <option value="GAMING">Gaming</option>
+                <option value="EDUCATION">Education</option>
+                <option value="VLOGGING">Vlogging</option>
+                <option value="FASHION">Fashion</option>
+                <option value="TRAVEL">Travel</option>
+                <option value="FITNESS">Fitness</option>
+                <option value="BEAUTY">Beauty</option>
+                <option value="HEALTH">Health</option>
+            </select>
+        </div>
     </div><br><br>
     <div class="form-group">
         <button type="submit" class="btn btn-primary">Create Campaign</button>
     </div>
 </form>
+<script>
+function toggleNicheSelect(visibility){
+    var nicheSelect=document.getElementById("nicheSelect");
+    if (visibility==='private'){
+        nicheSelect.style.display="block";
+    } else{
+        nicheSelect.style.display="none";
+    }
+}
+</script>
 
 {% endblock %}

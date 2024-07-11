@@ -135,7 +135,6 @@ def register_influencer():
         confirm_password=request.form.get('confirm_password')
         name=request.form.get('name')
         platform=request.form.get('platform')
-        category = request.form['category']
         niche = request.form['niche']
         reach = request.form.get('reach',0)
         if not username or not password or not confirm_password or not platform:
@@ -151,7 +150,7 @@ def register_influencer():
         password_hash=generate_password_hash(password)
 
 
-        new_influencer = Influencer(username=username, passhash=password_hash, name=name, platform=platform,category=category,niche=niche,reach=int(reach) if reach else None )
+        new_influencer = Influencer(username=username, passhash=password_hash, name=name, platform=platform,niche=niche,reach=int(reach) if reach else None )
         db.session.add(new_influencer)
         db.session.commit()
         flash('Registeration as an Influencer completed Successfully.Please login now.')
@@ -344,8 +343,9 @@ def influencer_dashboard():
 @auth_required
 def find_campaigns():
     if request.method=='POST':
-        return render_template('find_campaigns.html')
-    return render_template('find_campaigns.html')
+        pass
+    campaigns=Campaign.query.filter(Campaign.sponsor_id.isnot(None)).all()
+    return render_template('find_campaigns.html',campaigns=campaigns)
 
 
 
@@ -384,8 +384,16 @@ def create_campaign():
 
         start_date=datetime.strptime(start_date_str,'%Y-%m-%d').date()
         end_date=datetime.strptime(end_date_str,'%Y-%m-%d').date()
-        new_campaign=Campaign(name=name,description=description,start_date=start_date,
+
+        if visibility=='private':
+            niche=request.form.get('niche')
+            new_campaign=Campaign(name=name,description=description,start_date=start_date,
+                              end_date=end_date,visibility =visibility , budget = budget ,sponsor_id=sponsor_id,niche=niche)
+        else:
+            new_campaign=Campaign(name=name,description=description,start_date=start_date,
                               end_date=end_date,visibility =visibility , budget = budget ,sponsor_id=sponsor_id)
+            
+
         db.session.add(new_campaign)
         db.session.commit()
         flash("Campaign has been created","success")
@@ -403,19 +411,33 @@ def delete_campaign(campaign_id):
     flash("Campaign has been deleted","success")
     return redirect(url_for('sponsor_dashboard'))
 
-@app.route('/sponsor/create_ad_request>', methods=['POST'])
+@app.route('/sponsor/create_ad_request/<int:campaign_id>/<int:influencer_id>', methods=['GET','POST'])
 @auth_required
-def create_ad_request():
-        campaign_id=request.form.get('campaign_id')
-        influencer_id=request.form.get('influencer_id')
-        requirements=request.form.get('requirements')
-        payment_amount=request.form.get('payment_amount')
-        new_ad_request=AdRequest( campaign_id= campaign_id,influencer_id=influencer_id,requirements=requirements,payment_amount=payment_amount)
-        db.session.add(new_ad_request)
-        db.session.commit()
-        flash("Ad Request has been created","success")
-        return render_template('new_ad_request.html')
-
+def create_ad_request(campaign_id,influencer_id):
+        if request.method=='POST':
+             campaign_id=request.form.get('campaign_id')
+             influencer_id=request.form.get('influencer_id')
+             requirements=request.form.get('requirements')
+             payment_amount=request.form.get('payment_amount')
+             status='Pending'
+             if not payment_amount:
+                flash('Payment amount is required.')
+                return redirect(url_for('create_ad_request', campaign_id=campaign_id,influencer_id=influencer_id))
+             try:
+               payment_amount = float(payment_amount)
+             except ValueError:
+               flash('Invalid payment amount.')
+               return redirect(url_for('create_ad_request', campaign_id=campaign_id))
+        
+             new_ad_request=AdRequest(campaign_id=campaign_id,influencer_id=influencer_id,requirements=requirements,payment_amount=payment_amount,status=status)
+             db.session.add(new_ad_request)
+             db.session.commit()
+             flash("Ad Request has been created","success")
+             return redirect(url_for('sponsor_dashboard'))
+        campaign=Campaign.query.get_or_404(campaign_id)
+        influencer=Influencer.query.all()
+        return redirect(url_for('create_ad_request', campaign=campaign, influencer=influencer))
+    
 
 
 @app.route('/sponsor/delete-ad-request/<int:request_id>')
@@ -435,17 +457,16 @@ def find_influencers():
     if request.method=='POST':
         niche=request.form.get('niche')
         min_followers = request.form.get('min_followers', 0)
-        max_followers = request.form.get('max_followers', None)
-        max_followers=request.form.get('max_followers')
+        campaign_id=1
         query=Influencer.query
         if niche:
             query=query.filter(Influencer.niche.ilike(f"%{niche}%"))
         if min_followers:
             query.filter(Influencer.followers >= int(min_followers))
-        if max_followers:
-            query.filter(Influencer.followers <= int(max_followers))
-        influencers=query.all()           
-        return render_template('find_influencers.html',influencers=influencers)
+        
+        influencers=query.all()    
+        campaigns = Campaign.query.all() 
+        return render_template('find_influencers.html',influencers=influencers,campaign_id=campaign_id,campaigns=campaigns)
     return render_template('find_influencers.html')
 
 

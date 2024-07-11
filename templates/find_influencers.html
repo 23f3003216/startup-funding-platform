@@ -5,35 +5,58 @@
 {% endblock %}
 
 {% block content %}
-
 <form action="{{url_for('find_influencers')}}" class="my-form" method="post">
-    
-    <label for="niche" class="form-label">Niche</label>    
-    <input type="text" name="niche" id="niche" required>
+    <label for="campaign_id" class="form-label">Campaign</label>
+    <select name="campaign_id" id="campaign_id" class="form-control">
+        <option value="">Select a campaign</option>
+        {% for campaign in campaigns %} 
+            <option value="{{ campaign.id }}">{{ campaign.name }}</option>
+        {% endfor %}
+    </select><br>
 
-    <label for="min_reach" class="form-label">Minimum Reach</label>    
-    <input type="number" name="min_reach" id="min_reach" required>
+    <label for="niche" class="form-label">Niche</label>  
+    <select id="niche" name="niche" class="form-control">
+                <option value="">Any</option>
+                <option value="COOKING">Cooking</option>
+                <option value="TECHNOLOGY">Technology</option>
+                <option value="GAMING">Gaming</option>
+                <option value="EDUCATION">Education</option>
+                <option value="VLOGGING">Vlogging</option>
+                <option value="FASHION">Fashion</option>
+                <option value="TRAVEL">Travel</option>
+                <option value="FITNESS">Fitness</option>
+                <option value="BEAUTY">Beauty</option>
+                <option value="HEALTH">Health</option>
+    </select>  
 
-    <label for="max_followers" class="form-label">Maximum Followers</label>    
-    <input type="number" name="max_followers" id="max_followers" required>
+    <label for="min_reach" class="form-label">Reach</label>    
+    <input type="number" name="min_reach" id="min_reach" class="form-control"><br>
+
 
 <div class="form-group">
     <button type="submit" class="btn btn-primary">Search Influencers</button>
 </div>
-</form>
-
+</form> <br><br>
+<a href="{{url_for('sponsor_dashboard')}}" class="btn btn-primary">Back to Dashboard</a>
 <h2> Results</h2>
      <ul>
-        {% for influencer in influencers %}
+      {% if influencers %}
+         {% for influencer in influencers %}
            <li>
             <h3>{{influencer.name}}</h3>
             <p>Niche:{{influencer.niche}}</p>
             <p>Reach:{{influencer.reach}}</p>
-            
-            <a href="{{url_for('view_influencer',influencer_id=influencer.id)}}">View Influencer</a>
+            <p>Followers:{{influencer.followers}}</p>
+            <p>PLatform:{{influencer.platform}}</p>
+            <form action="{{ url_for('create_ad_request', campaign_id=campaign_id,influencer_id=influencer.id) }}" method="POST">
+                <input type="hidden" name="campaign_id" value="{{ request.form.campaign_id }}">
+                <button type="submit" class="btn btn-primary">Request {{ influencer.name }}</button>
+            </form>
+            <a href="{{url_for('view_influencer',influencer_id=influencer.id)}}" class="btn btn-secondary">View Influencer</a>
            </li>
-        {% else %}
+         {% endfor %}
+      {% else %}
            <p>No influencers found.</p>
-        {% endfor %}
+      {% endif %}
      </ul>
 {% endblock %}

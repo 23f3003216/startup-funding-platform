@@ -1,4 +1,5 @@
 from datetime import date,timedelta
+import enum
 from app import app,db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import String, Boolean, Enum, Integer, Column, ForeignKey, Text, Date, Float
@@ -66,13 +67,25 @@ class Sponsor(User):
 
     sponsor_campaigns = relationship('Campaign', backref='sponsor_relation', overlaps="sponsor_campaigns,sponsor_relation")
 
+class NicheEnum(enum.Enum):
+    COOKING = 'COOKING'
+    TECHNOLOGY = 'TECHNOLOGY'
+    EDUCATION = 'EDUCATION'
+    FASHION = 'FASHION '
+    GAMING = 'GAMING'
+    VLOGGING = 'VLOGGING '
+    TRAVEL='TRAVEL'
+    FITNESS='FITNESS'
+    HEALTH='HEALTH'
+    BEAUTY='BEAUTY'
+
+
 class Influencer(User):
     __tablename__ = 'influencer'
     id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     influencer_type = Column(Enum('influencer', name='influencer_type_enum'), nullable=False)
     platform = Column(Enum('Youtube', 'Instagram', 'Facebook', 'Linkedin', name='platform_enum'), nullable=False)
-    category = Column(String(64), nullable=False)
-    niche = Column(String(64), nullable=False)
+    niche = Column(Enum(NicheEnum), nullable=False)
     reach = Column(Integer, nullable=True)
     followers = db.Column(db.Integer, nullable=True)
 
@@ -81,12 +94,11 @@ class Influencer(User):
         'polymorphic_on': influencer_type
     }
 
-    def __init__(self, username, passhash, name=None, platform=None, category=None, niche=None, reach=None):
+    def __init__(self, username, passhash, name=None, platform=None, niche=None, reach=None):
         super().__init__(username, passhash, name)
         self.user_type='influencer'
         self.influencer_type = 'influencer'
         self.platform = platform
-        self.category = category
         self.niche = niche
         self.reach = reach
     def is_authenticated(self):
@@ -128,6 +140,7 @@ class Campaign(db.Model):
     sponsor_id = Column(Integer, ForeignKey('sponsor.id'), nullable=False)
     flagged = Column(Boolean, default=False)
     status = Column(String(20))
+    niche = db.Column(db.Enum(NicheEnum), nullable=False)
 
     sponsor = relationship('Sponsor', backref='campaigns', overlaps="sponsor_campaigns,sponsor_relation")
 

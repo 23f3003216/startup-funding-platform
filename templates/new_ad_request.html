@@ -5,31 +5,20 @@
 {% endblock %}
 
 {% block content %}
-<form action="{{url_for('create_ad_request')}}" class="my-form" method="post">
-        <label for="campaign_id" class="form-label">Campaign</label> 
-        <select id="campaign_id" name="campaign_id">
-            {% for campaign in active_campaigns %}
-               <option value="{{campaign.id}}">{{campaign.name}}</option>
-            {% endfor %}
-        </select>   
-    
-        <label for="influencer_id" class="form-label">Influencer</label> 
-        <select id="influencer_id" name="influencer_id">
-            {% for influencer in influencers %}
-               <option value="{{influencer.id}}">{{influencer.name}}</option>
-            {% endfor %}
-        </select>   
+<div class="container">
+    <h1>Create Ad Request for {{influencer.name}}</h1>
+    <form method="POST">
         <label for="requirements" class="form-label">Requirements</label>    
         <input type="text" name="requirements" id="requirements" required>
 
         <label for="payment_amount" class="form-label">Payment Amount</label>    
         <input type="number" name="payment_amount" id="payment_amount" required>
 
+
     <div class="form-group">
         <button type="submit" class="btn btn-primary">Create Ad Request</button>
     </div>
 </form>
-
-<a href="{{url_for('edit_ad_request',request_id=request.id)}}" class="btn btn-primary">Edit</a>
-<a href="{{url_for('delete_ad_request',request_id=request.id)}}" class="btn btn-danger">Delete</a>
+<a href="{{ url_for('sponsor_dashboard') }}">Back to Dashboard</a>
+</div>
 {% endblock %}
