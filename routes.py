@@ -411,32 +411,33 @@ def delete_campaign(campaign_id):
     flash("Campaign has been deleted","success")
     return redirect(url_for('sponsor_dashboard'))
 
-@app.route('/sponsor/create_ad_request/<int:campaign_id>/<int:influencer_id>', methods=['GET','POST'])
+@app.route('/sponsor/create_ad_request/<int:campaign_id>/<int:influencer_id>', methods=['GET', 'POST'])
 @auth_required
-def create_ad_request(campaign_id,influencer_id):
-        if request.method=='POST':
-             campaign_id=request.form.get('campaign_id')
-             influencer_id=request.form.get('influencer_id')
-             requirements=request.form.get('requirements')
-             payment_amount=request.form.get('payment_amount')
-             status='Pending'
-             if not payment_amount:
-                flash('Payment amount is required.')
-                return redirect(url_for('create_ad_request', campaign_id=campaign_id,influencer_id=influencer_id))
-             try:
-               payment_amount = float(payment_amount)
-             except ValueError:
-               flash('Invalid payment amount.')
-               return redirect(url_for('create_ad_request', campaign_id=campaign_id))
+def create_ad_request(campaign_id, influencer_id):
+    if request.method == 'POST':
+        requirements = request.form.get('requirements')
+        payment_amount = request.form.get('payment_amount')
         
-             new_ad_request=AdRequest(campaign_id=campaign_id,influencer_id=influencer_id,requirements=requirements,payment_amount=payment_amount,status=status)
-             db.session.add(new_ad_request)
-             db.session.commit()
-             flash("Ad Request has been created","success")
-             return redirect(url_for('sponsor_dashboard'))
-        campaign=Campaign.query.get_or_404(campaign_id)
-        influencer=Influencer.query.all()
-        return redirect(url_for('create_ad_request', campaign=campaign, influencer=influencer))
+        if not payment_amount:
+            flash('Payment amount is required.')
+            return redirect(url_for('create_ad_request', campaign_id=campaign_id, influencer_id=influencer_id))
+        
+        try:
+            payment_amount = float(payment_amount)
+        except ValueError:
+            flash('Invalid payment amount.')
+            return redirect(url_for('create_ad_request', campaign_id=campaign_id, influencer_id=influencer_id))
+        
+        status = 'Pending'
+        new_ad_request = AdRequest(campaign_id=campaign_id, influencer_id=influencer_id, requirements=requirements, payment_amount=payment_amount, status=status)
+        db.session.add(new_ad_request)
+        db.session.commit()
+        
+        flash("Ad Request has been created", "success")
+        return redirect(url_for('sponsor_dashboard'))
+    campaign = Campaign.query.get_or_404(campaign_id)
+    influencer = Influencer.query.get_or_404(influencer_id)
+    return render_template('new_ad_request.html', campaign=campaign, influencer=influencer)
     
 
 
@@ -512,19 +513,3 @@ def view_ad_request(request_id):
               return redirect(url_for('sponsor_dashboard'))
           
           return render_template('view_ad_request.html',ad_request=ad_request,influencers=influencers)
-
-@app.route('/assign_influencer/<int:request_id>',methods=['POST'])
-def assign_influencer(request_id):
-              influencer_id=request.form.get('influencer_id')
-              influencer=Influencer.query.get('influencer_id')
-              if influencer:
-                  influencer_name=influencer.name
-
-                  request=AdRequest.query.get('request_id')
-                  request.status='Assigned'
-                  db.session.commit()
-                  flash(f'Influencer {influencer_name} has been assigned successfully to this campaign',"success")
-              else:
-                  flash("Failed to assign influencer to this campaign","danger")
-              return redirect(url_for('view_campaign',campaign_id=request.campaign_id))
-       

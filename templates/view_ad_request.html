@@ -10,19 +10,6 @@
     <p>Requirements:{{ad_request.requirements}}</p>
     <p>Payment Amount:{{ad_request.payment_amount}}</p>
     <p>Status:{{ad_request.status}}</p>
-    <form method="POST" action="">
-        <div class="form-group">
-            <label for="influencer_id">Select Influencer</label>
-            <select class="form-control" id="select_influencer" name="influencer_id">
-                <option select disabled>Choose Influencer</option>
-                {% for influencer in influencers %}
-                   <option value="{{influencer.id}}">{{influencer.name}}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Assign Influencer</button>
-        <a href="{{url_for('find_influencers')}}" class="btn btn-secondary">Find Influencers</a>
-    </form><br><br>
     <a href="{{url_for('sponsor_dashboard')}}" class="btn btn-primary">Back to Dashboard</a>
 </div>
 {% endblock %}
