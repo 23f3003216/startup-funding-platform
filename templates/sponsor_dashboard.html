@@ -37,7 +37,8 @@
         <div class="col">
             <h3> Active Campaigns</h3>
             {% for campaign in active_campaigns %}
-               <div class="card">
+              {% if not campaign.completion_status %}
+              <div class="card">
                  <div class="card-body">
                     <h5 class="card-title">{{ campaign.name}}</h5>
                     <p class="card-text"> Progress:{{campaign.progress}}</p>
@@ -49,7 +50,8 @@
                       </form>
                     {% endif %}
                  </div>       
-               </div>
+              </div>
+              {% endif %}
             {% endfor %}
         </div>
     <div class="col">

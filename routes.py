@@ -476,9 +476,10 @@ def confirm_completion(campaign_id):
         return "Unauthorized",403
     
     campaign = Campaign.query.get_or_404(campaign_id)
-    campaign.status = 'Completed'
-    db.session.commit()
-    flash('Campaign completion confirmed.', 'success')
+    if campaign:
+        campaign.completion_status = True
+        db.session.commit()
+        flash('Campaign completion confirmed!', 'success')
     return redirect(url_for('sponsor_dashboard'))
 
 
