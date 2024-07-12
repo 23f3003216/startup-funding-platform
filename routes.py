@@ -335,7 +335,7 @@ def influencer_dashboard():
         flash('Not Found!','danger')
         return redirect(url_for('login'))
     details=InfluencerDetails.query.filter_by(user_id=user_id).first()
-    active_campaigns=[]
+    active_campaigns=Campaign.query.join(AdRequest).filter(AdRequest.influencer_id == user_id, AdRequest.status == 'Accepted').all()
     new_requests = AdRequest.query.filter_by(influencer_id=user_id, status='Pending').all()
     return render_template('influencer_dashboard.html',user=influencer,details=details,active_campaigns=active_campaigns,new_requests=new_requests)
 
