@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    View Campaign
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="display-4">{{campaign.name}}</h1>
+    <p>Description: {{campaign.description}}</p>
+    <p>Start Date: {{campaign.start_date}}</p>
+    <p>End Date: {{campaign.end_date}}</p>
+    {% if current_user.is_influencer %}
+    <form action="{{ url_for('mark_completed', campaign_id=campaign.id) }}" method="post">
+      <button type="submit" class="btn btn-success">Mark as Completed</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

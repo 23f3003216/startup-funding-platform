@@ -348,8 +348,37 @@ def find_campaigns():
     campaigns=Campaign.query.filter(Campaign.sponsor_id.isnot(None)).all()
     return render_template('find_campaigns.html',campaigns=campaigns)
 
+@app.route('/influencer/view_campaign_details/<int:campaign_id>',methods=['GET','POST'])
+@auth_required
+def view_campaign_details(campaign_id):
+          campaign=Campaign.query.get_or_404(campaign_id)
+          ad_request=AdRequest.query.filter_by(campaign_id=campaign_id).first()
+          if request.method=='POST':
+                 ad_name=request.form.get('ad_name')
+                 description=request.form.get('description')
+                 terms=request.form.get('terms')
+                 payment=request.form.get('payment')
+                 influencer_id=request.form.get('influencer_id')
+                 combined_description = f"Ad Name: {ad_name}\nDescription: {description}\nTerms: {terms}"
+                 new_ad_request=AdRequest(requirements=combined_description,campaign_id=campaign_id,influencer_id=influencer_id,payment_amount=payment,status='Pending')
+                 db.session.add(new_ad_request)
+                 db.session.commit()
+                 flash("Ad Request created successfully")
+                 return redirect(url_for('influencer_dashboard'))
 
+          return render_template('view_campaign_details.html',campaign=campaign,ad_request=ad_request)
 
+@app.route('/mark_completed/<int:campaign_id>', methods=['POST'])
+@login_required
+def mark_completed(campaign_id):
+    if not isinstance(current_user,Influencer):
+        return "Unauthorized",403
+    
+    campaign = Campaign.query.get_or_404(campaign_id)
+    campaign.completion_status = True
+    db.session.commit()
+    flash('Campaign marked as completed.', 'success')
+    return redirect(url_for('influencer_dashboard'))
 
 
 
@@ -440,7 +469,21 @@ def create_ad_request(campaign_id, influencer_id):
     influencer = Influencer.query.get_or_404(influencer_id)
     return render_template('new_ad_request.html', campaign=campaign, influencer=influencer)
     
+@app.route('/confirm_completion/<int:campaign_id>', methods=['POST'])
+@login_required
+def confirm_completion(campaign_id):
+    if not current_user.is_sponsor:
+        flash('You do not have permission to perform this action.', 'danger')
+        return redirect(url_for('index'))
 
+    campaign = Campaign.query.get_or_404(campaign_id)
+    if campaign.completion_status:
+        flash('Campaign completion confirmed.', 'success')
+    else:
+        flash('Campaign is not marked as completed by the influencer.', 'danger')
+    
+    db.session.commit()
+    return redirect(url_for('sponsor_dashboard'))
 
 @app.route('/sponsor/delete-ad-request/<int:request_id>')
 @auth_required

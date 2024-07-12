@@ -141,6 +141,7 @@ class Campaign(db.Model):
     flagged = Column(Boolean, default=False)
     status = Column(String(20))
     niche = db.Column(db.Enum(NicheEnum), nullable=False)
+    completion_status = Column(Boolean, default=False)
 
     sponsor = relationship('Sponsor', backref='campaigns', overlaps="sponsor_campaigns,sponsor_relation")
 
