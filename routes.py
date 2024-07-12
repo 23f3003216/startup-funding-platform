@@ -5,7 +5,7 @@ from functools import wraps
 from app import app,db,login_manager
 from datetime import date,datetime
 
-from models import User,AdRequest,Campaign,Admin,Influencer,Sponsor,InfluencerDetails
+from models import User,AdRequest,Campaign,Admin,Influencer,Sponsor,InfluencerDetails, update_user_types
 
 stats_bp=Blueprint('stats',__name__)
 
@@ -63,18 +63,20 @@ def influencer_stats():
      return render_template('influencer_stats.html',stats=influencer_stats)
 
 def create_admin_user():
-    admin_username='admin'
-    admin_password='admin'
-    admin_user=Admin.query.filter_by(username=admin_username).first()
-    if not admin_user:
-        password_hash=generate_password_hash(admin_password)
-        new_admin=Admin(username=admin_username,passhash=password_hash,name="Administrator")
-        db.session.add(new_admin)
+    admin=User.query.filter_by(user_type='admin').first()
+    if not admin:
+        password_hash = generate_password_hash('admin')  
+        admin = Admin(username='admin', passhash=password_hash,user_type='admin')
+        db.session.add(admin)
         db.session.commit()
+        print("Admin user created successfully.") 
+    else:
+        print("Admin user already exists.") 
 
 def setup():
     db.create_all()
     create_admin_user()
+    update_user_types() 
 
 def auth_required(func):
     @wraps(func)
@@ -272,28 +274,36 @@ def logout():
 @app.route('/admin')
 @auth_required
 def admin_dashboard():
-    total_users=User.query.count()
-    total_sponsors=User.query.filter_by(user_type='sponsor').count()
-    total_influencers=User.query.filter_by(user_type='influencer').count()
-    total_campaigns=Campaign.query.count()
-    total_public_campaigns=Campaign.query.filter_by(visibility='public').count()
-    total_private_campaigns=Campaign.query.filter_by(visibility='private').count()
-    total_ad_requests=AdRequest.query.count()
-    total_pending_requests=AdRequest.query.filter_by(status='Pending').count()
-    total_accepted_requests=AdRequest.query.filter_by(status='Accepted').count()
-    total_rejected_requests=AdRequest.query.filter_by(status='Rejected').count()
-    flagged_users=User.query.filter_by(flagged=True).count()
-    flagged_campaigns=Campaign.query.filter_by(Campaign.end_date>=date.today()).all()
-    ongoing_campaigns=Campaign.query.filter_by(flagged=True).count()
-    flagged_items=flagged_users+flagged_campaigns
+    total_users = User.query.count()
+    total_sponsors = User.query.filter_by(user_type='sponsor').count()
+    total_influencers = User.query.filter_by(user_type='influencer').count()
+    total_campaigns = Campaign.query.count()
+    total_public_campaigns = Campaign.query.filter_by(visibility='public').count()
+    total_private_campaigns = Campaign.query.filter_by(visibility='private').count()
+    total_ad_requests = AdRequest.query.count()
+    total_pending_requests = AdRequest.query.filter_by(status='Pending').count()
+    total_accepted_requests = AdRequest.query.filter_by(status='Accepted').count()
+    total_rejected_requests = AdRequest.query.filter_by(status='Rejected').count()
+    flagged_users = User.query.filter_by(flagged=True).count()
+    flagged_campaigns = Campaign.query.filter_by(flagged=True).count()
+    ongoing_campaigns_list = Campaign.query.filter(Campaign.end_date >= date.today()).all()
+    flagged_users_list = User.query.filter_by(flagged=True).all()
+    flagged_campaigns_list = Campaign.query.filter_by(flagged=True).all()
+    flagged_items_list = flagged_users_list + flagged_campaigns_list
 
-    return render_template('admin_dashboard.html',total_users=total_users, total_sponsors= total_sponsors,total_influencers=total_influencers,total_campaigns=total_campaigns,
-                       total_public_campaigns=total_public_campaigns, total_private_campaigns=total_private_campaigns, total_ad_requests=total_ad_requests,
-                           total_pending_requests=total_pending_requests,total_accepted_requests=total_accepted_requests,total_rejected_requests=total_rejected_requests,
-                           flagged_users=len(flagged_users),flagged_campaigns=len(flagged_campaigns), ongoing_campaigns=ongoing_campaigns,
-                           flagged_items=flagged_items)
+    return render_template('admin_dashboard.html', total_users=total_users, total_sponsors=total_sponsors,
+                           total_influencers=total_influencers, total_campaigns=total_campaigns,
+                           total_public_campaigns=total_public_campaigns, total_private_campaigns=total_private_campaigns,
+                           total_ad_requests=total_ad_requests, total_pending_requests=total_pending_requests,
+                           total_accepted_requests=total_accepted_requests, total_rejected_requests=total_rejected_requests,
+                           flagged_users=flagged_users, flagged_campaigns=flagged_campaigns,
+                           ongoing_campaigns=ongoing_campaigns_list, flagged_items=flagged_items_list)
 
-
+@app.route('/admin/view_campaign/<int:campaign_id>')
+@auth_required
+def admin_view_campaign(campaign_id):
+    campaign=Campaign.query.get_or_404(campaign_id)
+    return render_template('admin_view_campaign.html',campaign=campaign)
 
 
 @app.route('/admin/view_item/<int:item_id>')
@@ -625,3 +635,7 @@ def make_payment(campaign_id):
         return redirect(url_for('completed_requests'))
      campaign = Campaign.query.get_or_404(campaign_id)
      return render_template('make_payment.html',campaign=campaign)
+
+
+password = 'admin'  
+password_hash = generate_password_hash(password)

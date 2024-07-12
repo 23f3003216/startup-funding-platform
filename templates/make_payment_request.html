@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Make Payment
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1> Make Payment</h1>
+    <form action="{{ url_for('make_payment', request_id=ad_request.id) }}" method="POST">
+        <label for="card_number" class="form-label">Card Number</label>
+        <input type="text" name="card_number" id="card_number" required><br>
+
+        <label for="expiration_date" class="form-label">Expiration Date</label>
+        <input type="date" name="expiration_date" id="expiration_date" required><br>
+
+        <label for="cvv" class="form-label">CVV</label>
+        <input type="text" name="cvv" id="cvv" required><br>
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Pay</button>
+        </div>
+    </form>
+    <a href="{{ url_for('sponsor_dashboard') }}">Back to Dashboard</a>
+</div>
+{% endblock %}
