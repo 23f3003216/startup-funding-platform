@@ -472,18 +472,15 @@ def create_ad_request(campaign_id, influencer_id):
 @app.route('/confirm_completion/<int:campaign_id>', methods=['POST'])
 @login_required
 def confirm_completion(campaign_id):
-    if not current_user.is_sponsor:
-        flash('You do not have permission to perform this action.', 'danger')
-        return redirect(url_for('index'))
-
-    campaign = Campaign.query.get_or_404(campaign_id)
-    if campaign.completion_status:
-        flash('Campaign completion confirmed.', 'success')
-    else:
-        flash('Campaign is not marked as completed by the influencer.', 'danger')
+    if not isinstance(current_user,Sponsor):
+        return "Unauthorized",403
     
+    campaign = Campaign.query.get_or_404(campaign_id)
+    campaign.status = 'Completed'
     db.session.commit()
+    flash('Campaign completion confirmed.', 'success')
     return redirect(url_for('sponsor_dashboard'))
+
 
 @app.route('/sponsor/delete-ad-request/<int:request_id>')
 @auth_required
@@ -603,4 +600,27 @@ def reject_request(request_id):
         return redirect(url_for('influencer_dashboard'))
     return render_template('reject_request.html',request=ad_request)
     
+@app.route('/completed_requests')
+@login_required
+def completed_requests():
+    if not isinstance(current_user,Sponsor):
+        return "Unauthorized", 403
+    completed_campaigns=Campaign.query.filter_by(sponsor_id=current_user.id,status='Completed').all()
+    return render_template('completed_requests.html', completed_campaigns= completed_campaigns)
+    
 
+
+
+@app.route('/make_payment/<int:campaign_id>', methods=['GET','POST'])
+@login_required
+def make_payment(campaign_id):
+     if not isinstance(current_user,Sponsor):
+        return "Unauthorized", 403
+     if request.method=='POST':
+        card_number=request.form['card_number']
+        expiration_date=request.form['expiration_date']
+        cvv=request.form['cvv']
+        flash("Payment Successfully done",'sucess')
+        return redirect(url_for('completed_requests'))
+     campaign = Campaign.query.get_or_404(campaign_id)
+     return render_template('make_payment.html',campaign=campaign)

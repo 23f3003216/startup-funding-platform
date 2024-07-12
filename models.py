@@ -139,7 +139,7 @@ class Campaign(db.Model):
     visibility = Column(Enum('public', 'private', name='visibility_enum'), nullable=False, default='public')
     sponsor_id = Column(Integer, ForeignKey('sponsor.id'), nullable=False)
     flagged = Column(Boolean, default=False)
-    status = Column(String(20))
+    status = Column(String(20), nullable=False,default='In Progress')
     niche = db.Column(db.Enum(NicheEnum), nullable=False)
     completion_status = Column(Boolean, default=False)
 
