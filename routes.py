@@ -336,8 +336,9 @@ def influencer_dashboard():
         return redirect(url_for('login'))
     details=InfluencerDetails.query.filter_by(user_id=user_id).first()
     active_campaigns=[]
-    new_requests=[]
+    new_requests = AdRequest.query.filter_by(influencer_id=user_id, status='Pending').all()
     return render_template('influencer_dashboard.html',user=influencer,details=details,active_campaigns=active_campaigns,new_requests=new_requests)
+
 
 @app.route('/influencer/find-campaigns', methods=['GET','POST'])
 @auth_required
@@ -513,3 +514,22 @@ def view_ad_request(request_id):
               return redirect(url_for('sponsor_dashboard'))
           
           return render_template('view_ad_request.html',ad_request=ad_request,influencers=influencers)
+
+
+@app.route('/influencer/accept_request/<int:request_id>', methods=['POST'])
+@auth_required
+def accept_request(request_id):
+    ad_request = AdRequest.query.get_or_404(request_id)
+    ad_request.status = 'Accepted'
+    db.session.commit()
+    flash('Request accepted successfully', 'success')
+    return redirect(url_for('influencer_dashboard'))
+
+@app.route('/influencer/reject_request/<int:request_id>', methods=['POST'])
+@auth_required
+def reject_request(request_id):
+    ad_request = AdRequest.query.get_or_404(request_id)
+    ad_request.status = 'Rejected'
+    db.session.commit()
+    flash('Request rejected successfully', 'success')
+    return redirect(url_for('influencer_dashboard'))
