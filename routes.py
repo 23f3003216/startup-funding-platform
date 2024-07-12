@@ -516,20 +516,48 @@ def view_ad_request(request_id):
           return render_template('view_ad_request.html',ad_request=ad_request,influencers=influencers)
 
 
-@app.route('/influencer/accept_request/<int:request_id>', methods=['POST'])
-@auth_required
+
+@app.route('/request/<int:request_id>/view', methods=['GET'])
+@login_required
+def view_request(request_id):
+    ad_request = AdRequest.query.get_or_404(request_id)
+    if ad_request.influencer_id != current_user.id:
+        flash("Unauthorized action")
+        return redirect(url_for('influencer_dashboard'))
+    return render_template('view_request.html',request=ad_request)
+
+
+
+
+@app.route('/request/<int:request_id>/accept', methods=['GET','POST'])
+@login_required
 def accept_request(request_id):
     ad_request = AdRequest.query.get_or_404(request_id)
-    ad_request.status = 'Accepted'
-    db.session.commit()
-    flash('Request accepted successfully', 'success')
-    return redirect(url_for('influencer_dashboard'))
+    if ad_request.influencer_id != current_user.id:
+        flash("Unauthorized action")
+        return redirect(url_for('influencer_dashboard'))
+    if request.method=='POST':
+        ad_request.status='Accepted'
+        db.session.commit()
+        flash("Ad Request Accepted")
+        return redirect(url_for('influencer_dashboard'))
+    return render_template('accept_request.html',request=ad_request)
 
-@app.route('/influencer/reject_request/<int:request_id>', methods=['POST'])
-@auth_required
+   
+
+
+@app.route('/request/<int:request_id>/reject', methods=['GET','POST'])
+@login_required
 def reject_request(request_id):
     ad_request = AdRequest.query.get_or_404(request_id)
-    ad_request.status = 'Rejected'
-    db.session.commit()
-    flash('Request rejected successfully', 'success')
-    return redirect(url_for('influencer_dashboard'))
+    if ad_request.influencer_id != current_user.id:
+        flash("Unauthorized action")
+        return redirect(url_for('influencer_dashboard'))
+    if request.method=='POST':
+        ad_request.status='Rejected'
+        db.session.commit()
+        flash("Ad Request Rejected")
+        return redirect(url_for('influencer_dashboard'))
+    return render_template('reject_request.html',request=ad_request)
+    
+

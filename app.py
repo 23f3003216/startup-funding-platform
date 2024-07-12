@@ -21,6 +21,7 @@ from routes import setup
 with app.app_context():
         db.create_all()
 
+
 import routes
 from routes import stats_bp
 app.register_blueprint(stats_bp)
