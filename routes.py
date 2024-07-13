@@ -386,6 +386,7 @@ def influencer_dashboard():
     if current_user.flagged:
         active_campaigns = []
         new_requests = []
+        return render_template('influencer_dashboard.html', user=influencer, details=None, active_campaigns=active_campaigns, new_requests=new_requests)
     else:
       details=InfluencerDetails.query.filter_by(user_id=user_id).first()
       active_campaigns=Campaign.query.join(AdRequest).filter(AdRequest.influencer_id == user_id, AdRequest.status == 'Accepted').all()
@@ -396,6 +397,9 @@ def influencer_dashboard():
 @app.route('/influencer/find-campaigns', methods=['GET','POST'])
 @auth_required
 def find_campaigns():
+    if current_user.flagged:
+        flash('You have been flagged by the Admin. You can not find any campaigns.','danger')
+        return redirect(url_for('influencer_dashboard'))
     if request.method=='POST':
         pass
     campaigns=Campaign.query.filter(Campaign.sponsor_id.isnot(None)).all()
