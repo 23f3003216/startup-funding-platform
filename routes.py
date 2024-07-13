@@ -407,7 +407,8 @@ def find_campaigns():
         pass
     campaigns = Campaign.query.filter(
         (Campaign.visibility == 'public') |
-        ((Campaign.visibility == 'private') & (Campaign.niche == niche))
+        ((Campaign.visibility == 'private') & (Campaign.niche == niche)) &
+        (Campaign.status != 'Completed')
     ).all()
     return render_template('find_campaigns.html',campaigns=campaigns)
 
