@@ -55,17 +55,19 @@ class Sponsor(User):
     id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     sponsor_type = Column(Enum('sponsor', name='sponsor_type_enum'), nullable=False)
     industry = Column(String(256), nullable=False)
+    overall_budget = Column(Float, nullable=False,default=0.0)
 
     __mapper_args__ = {
         'polymorphic_identity': 'sponsor',
         'polymorphic_on': sponsor_type
     }
 
-    def __init__(self, username, passhash, name=None, industry=None):
+    def __init__(self, username, passhash, name=None, industry=None,overall_budget=0.0):
         super().__init__(username, passhash, name)
         self.user_type='sponsor'
         self.sponsor_type = 'sponsor'
         self.industry = industry
+        self.overall_budget = overall_budget
 
     sponsor_campaigns = relationship('Campaign', backref='sponsor_relation', overlaps="sponsor_campaigns,sponsor_relation")
 

@@ -168,6 +168,8 @@ def register_sponsor():
         confirm_password=request.form.get('confirm_password')
         name=request.form.get('name')
         industry=request.form.get('industry')
+        overall_budget=request.form.get('overall_budget')
+        
         if not username or not password or not confirm_password or not industry:
            flash('Please fill out all the details.')
            return redirect(url_for('register_sponsor'))
@@ -181,7 +183,7 @@ def register_sponsor():
         password_hash=generate_password_hash(password)
 
 
-        new_sponsor = Sponsor(username=username, passhash=password_hash, name=name, industry=industry)
+        new_sponsor = Sponsor(username=username, passhash=password_hash, name=name, industry=industry,overall_budget=overall_budget)
         db.session.add(new_sponsor)
         db.session.commit()
         flash('Registeration as a Sponsor completed Successfully.Please login now.')
@@ -496,6 +498,9 @@ def sponsor_dashboard():
 @app.route('/sponsor/create-campaign',methods=(['GET','POST']))
 @auth_required
 def create_campaign():
+    sponsor_id=session.get('user_id')
+    sponsor=Sponsor.query.get(sponsor_id)
+
     if request.method=='POST':
         name=request.form.get('name')
         description=request.form.get('description')
@@ -503,10 +508,12 @@ def create_campaign():
         end_date_str=request.form.get('end_date')
         visibility = request.form.get('visibility')
         budget = float(request.form.get('budget'))
-        sponsor_id=session.get('user_id')
-
         start_date=datetime.strptime(start_date_str,'%Y-%m-%d').date()
         end_date=datetime.strptime(end_date_str,'%Y-%m-%d').date()
+        total_existing_budget=sum(campaign.budget for campaign in sponsor.sponsor_campaigns)
+        if total_existing_budget + budget >sponsor.overall_budget:
+            flash('Camapign Budget has exceeded the overall budget limit.','danger')
+            return redirect(url_for('create_campaign'))
 
         if visibility=='private':
             niche=request.form.get('niche')
