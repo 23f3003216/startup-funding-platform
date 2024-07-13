@@ -524,14 +524,70 @@ def create_campaign():
     else:
         return render_template('new_campaign.html')
 
+@app.route('/sponsor/update_campaign/<int:campaign_id>',methods=(['GET','POST']))
+@login_required
+def update_campaign(campaign_id):
+    campaign=Campaign.query.get(campaign_id)
+    if not campaign:
+        flash('Campaign not found.')
+        return redirect(url_for('sponsor_dashboard'))
+    if request.method=='GET':
+        return render_template('edit_campaign.html',campaign=campaign)
+    elif request.method=='POST':
+        campaign.name = request.form.get('name')
+        campaign.description = request.form.get('description')
+        campaign.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
+        campaign.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
+        campaign.visibility = request.form.get('visibility')
+        campaign.budget = float(request.form.get('budget'))
+        if campaign.visibility=='private':
+            campaign.niche=request.form.get('niche')
+        db.session.commit()
+        flash("Campaign has been updated","success")
+        return redirect(url_for('sponsor_dashboard'))
+    return render_template('edit_campaign.html', campaign=campaign)
 
-@app.route('/sponsor/delete-campaign/<int:campaign_id>', methods=['GET','POST'])
-@auth_required
+
+@app.route('/sponsor/delete_campaign/<int:campaign_id>', methods=['GET','POST'])
+@login_required
 def delete_campaign(campaign_id):
     campaign=Campaign.query.get_or_404(campaign_id)
+    if not campaign:
+        flash('Campaign not found.')
+        return redirect(url_for('sponsor_dashboard'))
     db.session.delete(campaign)
     db.session.commit()
     flash("Campaign has been deleted","success")
+    return redirect(url_for('sponsor_dashboard'))
+
+@app.route('/edit_ad_request/<int:request_id>', methods=['GET', 'POST'])
+@login_required
+def edit_ad_request(request_id):
+    ad_request = AdRequest.query.get(request_id)
+    if not ad_request:
+        flash('Ad request not found.')
+        return redirect(url_for('sponsor_dashboard'))
+
+    if request.method == 'GET':
+        return render_template('edit_ad_request.html', request=request)
+
+    elif request.method == 'POST':
+        ad_request.requirements = request.form.get('requirements')
+        ad_request.payment_amount = request.form.get('payment_amount')
+        db.session.commit()
+        flash('Ad request updated successfully.')
+        return redirect(url_for('sponsor_dashboard'))
+
+@app.route('/sponsor/delete_ad_request/<int:request_id>', methods=['GET','POST'])
+@login_required
+def delete_ad_request(request_id):
+    request=AdRequest.query.get(request_id)
+    if not request:
+        flash('Ad Request not found.')
+        return redirect(url_for('sponsor_dashboard'))
+    db.session.delete(request)
+    db.session.commit()
+    flash("Ad Request has been deleted","success")
     return redirect(url_for('sponsor_dashboard'))
 
 @app.route('/sponsor/create_ad_request/<int:campaign_id>/<int:influencer_id>', methods=['GET', 'POST'])
@@ -581,14 +637,6 @@ def confirm_completion(campaign_id):
     return redirect(url_for('sponsor_dashboard'))
 
 
-@app.route('/sponsor/delete-ad-request/<int:request_id>')
-@auth_required
-def delete_ad_request(request_id):
-    ad_request=AdRequest.query.get_or_404(request_id)
-    db.session.delete(ad_request)
-    db.session.commit()
-    flash("Ad Request has been deleted","success")
-    return redirect(url_for('sponsor_dashboard'))
 
 
 @app.route('/sponsor/find-influencers',methods=['GET','POST'])

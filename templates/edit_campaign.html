@@ -1,0 +1,61 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+   Edit Campaign : {{campaign.name}}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="display-4">Edit Campaign : {{campaign.name}}</h1>
+    <form action="{{url_for('update_campaign',campaign_id=campaign.id)}}" class="my-form" method="POST">
+        <div class="form-group">
+            <label for="name" class="form-label">Name</label>    
+            <input type="text" name="name" id="name" value="{{campaign.name}}" > <br><br>
+            <label for="description" class="form-label">Description</label>    
+            <input type="text" name="description" id="description" value="{{campaign.description}}"><br><br>
+            <label for="start_date" class="form-label">Start Date</label>    
+            <input type="date" name="start_date" id="start_date" value="{{campaign.start_date}}" ><br><br>
+            <label for="end_date" class="form-label">End Date</label>    
+            <input type="date" name="end_date" id="end_date" value="{{campaign.end_date}}" ><br><br>
+            <label for="budget" class="form-label">Budget</label>    
+            <input type="number" name="budget" id="budget" value="{{campaign.budget}}" ><br><br>
+            <label for="visibility" class="form-label">Visibility</label>  
+            <select id="visibility" name="visibility" onchange="toggleNicheSelect(this.value)">
+                <option value="public" {% if campaign.visibility == 'public' %} selected {% endif %}>Public</option>
+                <option value="private" {% if campaign.visibility == 'private' %} selected {% endif %}>Private</option>
+            </select>
+            <div id="nicheSelect" {% if campaign.visibility == 'private' %} style="display: block;" {% else %} style="display: none;" {% endif %}>
+
+                <label for="niche" class="form-label">Select Niche</label>  
+                <select id="niche" name="niche">
+                    <option value="COOKING" {% if campaign.niche == 'COOKING' %} selected {% endif %}>Cooking</option>
+                    <option value="TECHNOLOGY" {% if campaign.niche == 'TECHNOLOGY' %} selected {% endif %}>Technology</option>
+                    <option value="GAMING" {% if campaign.niche == 'GAMING' %} selected {% endif %}>Gaming</option>
+                    <option value="EDUCATION" {% if campaign.niche == 'EDUCATION' %} selected {% endif %}>Education</option>
+                    <option value="VLOGGING" {% if campaign.niche == 'VLOGGING' %} selected {% endif %}>Vlogging</option>
+                    <option value="FASHION" {% if campaign.niche == 'FASHION' %} selected {% endif %}>Fashion</option>
+                    <option value="TRAVEL" {% if campaign.niche == 'TRAVEL' %} selected {% endif %}>Travel</option>
+                    <option value="FITNESS" {% if campaign.niche == 'FITNESS' %} selected {% endif %}>Fitness</option>
+                    <option value="BEAUTY" {% if campaign.niche == 'BEAUTY' %} selected {% endif %}>Beauty</option>
+                    <option value="HEALTH" {% if campaign.niche == 'HEALTH' %} selected {% endif %}>Health</option>
+                </select>
+            </div>
+        </div><br><br>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Update Campaign</button>
+            <a href="{{url_for('sponsor_dashboard')}}" class="btn btn-primary">Cancel</a><br><br>
+        </div>
+    </form>
+    <script>
+    function toggleNicheSelect(visibility){
+        var nicheSelect=document.getElementById("nicheSelect");
+        if (visibility==='private'){
+            nicheSelect.style.display="block";
+        } else{
+            nicheSelect.style.display="none";
+        }
+    }
+    toggleNicheSelect("{{campaign.visibility}}")
+    </script>
+</div>
+{% endblock %}
