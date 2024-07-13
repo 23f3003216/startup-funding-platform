@@ -225,6 +225,9 @@ def public_profile(username):
             if not user:
                 flash('User not found.')
                 return redirect(url_for('index'))
+            if user.user_type !='influencer' or not user.influencer:
+                flash('Not a Public Profile.')
+                return redirect(url_for('index'))
             influencer=user.influencer
             return render_template('public_profile.html', user=user,influencer=influencer)
 
@@ -492,7 +495,9 @@ def sponsor_dashboard():
         return redirect(url_for('login'))
     active_campaigns=Campaign.query.filter_by(sponsor_id=sponsor.id).all()
     new_requests=AdRequest.query.join(Campaign).filter(Campaign.sponsor_id==sponsor.id,AdRequest.status=='Pending').all()
-    return render_template('sponsor_dashboard.html',user=sponsor,active_campaigns=active_campaigns,new_requests=new_requests)
+    total_allocated_budget=sum(campaign.budget for campaign in active_campaigns if campaign.status !='Completed')
+    remaining_budget=sponsor.overall_budget-total_allocated_budget
+    return render_template('sponsor_dashboard.html',user=sponsor,active_campaigns=active_campaigns,new_requests=new_requests,remaining_budget=remaining_budget)
 
 
 @app.route('/sponsor/create-campaign',methods=(['GET','POST']))
