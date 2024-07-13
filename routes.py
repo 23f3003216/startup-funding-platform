@@ -569,7 +569,7 @@ def edit_ad_request(request_id):
         return redirect(url_for('sponsor_dashboard'))
 
     if request.method == 'GET':
-        return render_template('edit_ad_request.html', request=request)
+        return render_template('edit_ad_request.html', ad_request=ad_request)
 
     elif request.method == 'POST':
         ad_request.requirements = request.form.get('requirements')
@@ -581,11 +581,11 @@ def edit_ad_request(request_id):
 @app.route('/sponsor/delete_ad_request/<int:request_id>', methods=['GET','POST'])
 @login_required
 def delete_ad_request(request_id):
-    request=AdRequest.query.get(request_id)
-    if not request:
+    ad_request=AdRequest.query.get(request_id)
+    if not ad_request:
         flash('Ad Request not found.')
         return redirect(url_for('sponsor_dashboard'))
-    db.session.delete(request)
+    db.session.delete(ad_request)
     db.session.commit()
     flash("Ad Request has been deleted","success")
     return redirect(url_for('sponsor_dashboard'))
