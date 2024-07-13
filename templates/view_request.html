@@ -6,11 +6,17 @@
 
 {% block content %}
 <div class="container">
+    {% if campaign %}
+    <h1>Campaign Details</h1>
+    <p>Name: {{campaign.name}}</p>
+    <p>Description: {{campaign.description}}</p>
+    <p>Start Date: {{campaign.start_date}}</p>
+    <p>End Date: {{campaign.end_date}}</p>
+    {% endif %}
     <h1>Ad Request Details</h1>
-    <p><strong>Ad Name:</strong> {{ request.ad_name }}</p>
-    <p><strong>Description:</strong> {{ request.description }}</p>
-    <p><strong>Terms:</strong> {{ request.terms }}</p>
-    <p><strong>Payment:</strong> Rs {{ request.payment }}</p>
+    <p><strong>Requirements:</strong> {{request.requirements }}</p>
+    <p><strong>Payment:</strong> {{ request.payment_amount }}</p>
+
     <div class="mt-3">
         <a href="{{ url_for('accept_request', request_id=request.id) }}" class="btn btn-success">Accept</a>
         <a href="{{ url_for('reject_request', request_id=request.id) }}" class="btn btn-danger">Reject</a>

@@ -711,7 +711,8 @@ def view_request(request_id):
     if ad_request.influencer_id != current_user.id:
         flash("Unauthorized action")
         return redirect(url_for('influencer_dashboard'))
-    return render_template('view_request.html',request=ad_request)
+    campaign = Campaign.query.get(ad_request.campaign_id)
+    return render_template('view_request.html',request=ad_request,campaign=campaign)
 
 
 
