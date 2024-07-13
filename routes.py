@@ -335,7 +335,7 @@ def reinstate_influencer(influencer_id):
     flash('Influencer reinstated.', 'success')
     return redirect(url_for('admin_view_flagged_influencers'))
 
-@app.route('/admin/delete_influencer/<int:influencer_id>')
+@app.route('/admin/delete_influencer/<int:influencer_id>',methods=['POST'])
 @auth_required
 def delete_influencer(influencer_id):
     influencer = User.query.get_or_404(influencer_id)
@@ -501,10 +501,7 @@ def delete_campaign(campaign_id):
 @app.route('/sponsor/create_ad_request/<int:campaign_id>/<int:influencer_id>', methods=['GET', 'POST'])
 @auth_required
 def create_ad_request(campaign_id, influencer_id):
-    if influencer.flagged:
-        flash('You cannot create ad requests for this influencer because they are flagged.', 'danger')
-        return redirect(url_for('find_influencers'))
-    
+    influencer = Influencer.query.get_or_404(influencer_id)
     if request.method == 'POST':
         requirements = request.form.get('requirements')
         payment_amount = request.form.get('payment_amount')
@@ -526,8 +523,11 @@ def create_ad_request(campaign_id, influencer_id):
         
         flash("Ad Request has been created", "success")
         return redirect(url_for('sponsor_dashboard'))
+    if influencer.flagged:
+        flash('You cannot create ad requests for this influencer because they are flagged.', 'danger')
+        return redirect(url_for('find_influencers'))
     campaign = Campaign.query.get_or_404(campaign_id)
-    influencer = Influencer.query.get_or_404(influencer_id)
+
     return render_template('new_ad_request.html', campaign=campaign, influencer=influencer)
     
 @app.route('/confirm_completion/<int:campaign_id>', methods=['POST'])
@@ -690,3 +690,4 @@ def make_payment(campaign_id):
 
 password = 'admin'  
 password_hash = generate_password_hash(password)
+print(f"Hashed Password: {password_hash}")

@@ -3,7 +3,7 @@ import enum
 from app import app,db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import String, Boolean, Enum, Integer, Column, ForeignKey, Text, Date, Float
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship,backref
 from werkzeug.security import generate_password_hash
 from flask_login import UserMixin
 
@@ -150,13 +150,13 @@ class AdRequest(db.Model):
     __tablename__ = 'ad_request'
     id = Column(Integer, primary_key=True)
     campaign_id = Column(Integer, ForeignKey('campaign.id'), nullable=False)
-    influencer_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    influencer_id = Column(Integer, ForeignKey('influencer.id',ondelete='CASCADE'), nullable=False)
     requirements = Column(Text, nullable=True)
     payment_amount = Column(Float, nullable=False)
     status = Column(Enum('Pending', 'Accepted', 'Rejected', name='status_enum'), nullable=False, default='Pending')
 
     campaign = relationship('Campaign', backref='ad_requests')
-    influencer = relationship('Influencer', backref='ad_requests', overlaps="influencer_ad_requests,influencer_relation")
+    influencer = relationship('Influencer',backref=backref('ad_requests', cascade='all, delete-orphan'), overlaps="influencer_ad_requests,influencer_relation")
 
 def update_user_types():
     with app.app_context():

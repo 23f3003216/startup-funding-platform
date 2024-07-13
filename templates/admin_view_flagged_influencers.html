@@ -16,8 +16,9 @@
             <p>Niche: {{influencer.niche}}</p>
             <p>Reach: {{influencer.reach}}</p>
             <a href="{{url_for('reinstate_influencer',influencer_id=influencer.id)}}" class="btn btn-primary">Reinstate</a><br><br>
-            <a href="{{url_for('delete_influencer',influencer_id=influencer.id)}}" class="btn btn-danger">Delete</a><br><br>
- 
+            <form method="POST" action="{{url_for('delete_influencer',influencer_id=influencer.id)}}">
+              <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this influencer?')">Delete</button>
+            </form>
           </div>
          </div>
       {% endfor %}
