@@ -305,6 +305,45 @@ def admin_view_campaign(campaign_id):
     campaign=Campaign.query.get_or_404(campaign_id)
     return render_template('admin_view_campaign.html',campaign=campaign)
 
+@app.route('/admin/view_influencers')
+@auth_required
+def admin_view_influencers():
+    influencers = User.query.filter(User.user_type == 'influencer', User.flagged.is_(False)).all()
+    return render_template('admin_view_influencers.html',influencers=influencers)
+
+@app.route('/admin/view_flagged_influencers')
+@auth_required
+def admin_view_flagged_influencers():
+    flagged_influencers=User.query.filter(User.user_type=='influencer',User.flagged.is_(True)).all()
+    return render_template('admin_view_flagged_influencers.html',flagged_influencers=flagged_influencers)
+
+@app.route('/admin/flag_influencer/<int:influencer_id>')
+@auth_required
+def flag_influencer(influencer_id):
+    influencer = User.query.get_or_404(influencer_id)
+    influencer.flagged = True
+    db.session.commit()
+    flash('Influencer flagged.', 'success')
+    return redirect(url_for('admin_view_influencers'))
+
+@app.route('/admin/reinstate_influencer/<int:influencer_id>')
+@auth_required
+def reinstate_influencer(influencer_id):
+    influencer = User.query.get_or_404(influencer_id)
+    influencer.flagged = False
+    db.session.commit()
+    flash('Influencer reinstated.', 'success')
+    return redirect(url_for('admin_view_flagged_influencers'))
+
+@app.route('/admin/delete_influencer/<int:influencer_id>')
+@auth_required
+def delete_influencer(influencer_id):
+    influencer = User.query.get_or_404(influencer_id)
+    db.session.delete(influencer)
+    db.session.commit()
+    flash('Influencer deleted.', 'success')
+    return redirect(url_for('admin_view_flagged_influencers'))
+
 
 @app.route('/admin/view_item/<int:item_id>')
 @auth_required
@@ -344,10 +383,14 @@ def influencer_dashboard():
     if not influencer:
         flash('Not Found!','danger')
         return redirect(url_for('login'))
-    details=InfluencerDetails.query.filter_by(user_id=user_id).first()
-    active_campaigns=Campaign.query.join(AdRequest).filter(AdRequest.influencer_id == user_id, AdRequest.status == 'Accepted').all()
-    new_requests = AdRequest.query.filter_by(influencer_id=user_id, status='Pending').all()
-    return render_template('influencer_dashboard.html',user=influencer,details=details,active_campaigns=active_campaigns,new_requests=new_requests)
+    if current_user.flagged:
+        active_campaigns = []
+        new_requests = []
+    else:
+      details=InfluencerDetails.query.filter_by(user_id=user_id).first()
+      active_campaigns=Campaign.query.join(AdRequest).filter(AdRequest.influencer_id == user_id, AdRequest.status == 'Accepted').all()
+      new_requests = AdRequest.query.filter_by(influencer_id=user_id, status='Pending').all()
+      return render_template('influencer_dashboard.html',user=influencer,details=details,active_campaigns=active_campaigns,new_requests=new_requests)
 
 
 @app.route('/influencer/find-campaigns', methods=['GET','POST'])

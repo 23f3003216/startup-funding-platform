@@ -25,52 +25,58 @@
         </div>
     </nav>
 
-    <h1 class="display-1"> Influencer Dashboard</h1>
+    <h1 class="display-1">Influencer Dashboard</h1>
 
-    {% if user %}
-        <h2> Welcome, {{ user.name }}</h2>
-        <div class="row">
-            <div class="col">
-                <div class="card">
-                    <div class="card-body">
-                        {% if details.profile_picture %}
-                            <img src="{{ url_for('static', filename='profile_pictures/' + details.profile_picture) }}" class="img-fluid rounded-circle mb-3" alt="Profile Picture">
-                        {% else %}
-                            <img src="{{ url_for('static', filename='profile_pictures/default.jpg') }}" class="img-fluid rounded-circle mb-3" alt="Profile Picture">
-                        {% endif %}
-                        <p class="card-text"> Rating: {{ details.rating }}</p>
-                        <p class="card-text"> Earnings this month: Rs {{ details.earnings }}</p>
+    {% if current_user.flagged %}
+        <div class="alert alert-danger" role="alert">
+            You have been flagged by the Admin. All your requests and ongoing campaigns have been removed. You cannot find any campaigns or receive any requests from sponsors.
+        </div>
+    {% else %}
+        {% if user %}
+            <h2>Welcome, {{ user.name }}</h2>
+            <div class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            {% if details.profile_picture %}
+                                <img src="{{ url_for('static', filename='profile_pictures/' + details.profile_picture) }}" class="img-fluid rounded-circle mb-3" alt="Profile Picture">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='profile_pictures/default.jpg') }}" class="img-fluid rounded-circle mb-3" alt="Profile Picture">
+                            {% endif %}
+                            <p class="card-text">Rating: {{ details.rating }}</p>
+                            <p class="card-text">Earnings this month: Rs {{ details.earnings }}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col">
-                <h3> Active Campaigns</h3>
-                {% for campaign in active_campaigns %}
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ campaign.name }}</h5>
-                            <p class="card-text"> Progress: {{ campaign.progress }}</p>
-                            <a href="{{ url_for('view_campaign_details', campaign_id=campaign.id) }}" class="btn btn-primary">View</a><br><br>
-                            <form method="POST" action="{{ url_for('mark_completed', campaign_id=campaign.id) }}">
-                                <button type="submit" class="btn btn-success">Mark as Completed</button>
-                            </form>
+                <div class="col">
+                    <h3>Active Campaigns</h3>
+                    {% for campaign in active_campaigns %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ campaign.name }}</h5>
+                                <p class="card-text">Progress: {{ campaign.progress }}</p>
+                                <a href="{{ url_for('view_campaign_details', campaign_id=campaign.id) }}" class="btn btn-primary">View</a><br><br>
+                                <form method="POST" action="{{ url_for('mark_completed', campaign_id=campaign.id) }}">
+                                    <button type="submit" class="btn btn-success">Mark as Completed</button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-                <hr>
-                <h4>New Requests</h4>
-                {% for request in new_requests %}
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ request.campaign.name }}</h5>
-                            <p class="card-text">{{ request.ad_name }}</p>
-                            <a href="{{ url_for('view_request', request_id=request.id) }}" class="btn btn-primary">View</a>
+                    {% endfor %}
+                    <hr>
+                    <h4>New Requests</h4>
+                    {% for request in new_requests %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ request.campaign.name }}</h5>
+                                <p class="card-text">{{ request.ad_name }}</p>
+                                <a href="{{ url_for('view_request', request_id=request.id) }}" class="btn btn-primary">View</a>
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             </div>
-        </div>
+        {% endif %}
     {% endif %}
 </div>
 {% endblock %}

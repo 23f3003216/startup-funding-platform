@@ -1,0 +1,29 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    View Flagged Influencers
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="display-4">Flagged Influencers</h1>
+    {% if flagged_influencers %}
+      {% for influencer in flagged_influencers %}
+         <div class="card mb-3">
+           <div class="card-body">
+            <p>Name: {{influencer.name}}</p>
+            <p>Platform: {{influencer.platform}}</p>
+            <p>Niche: {{influencer.niche}}</p>
+            <p>Reach: {{influencer.reach}}</p>
+            <a href="{{url_for('reinstate_influencer',influencer_id=influencer.id)}}" class="btn btn-primary">Reinstate</a><br><br>
+            <a href="{{url_for('delete_influencer',influencer_id=influencer.id)}}" class="btn btn-danger">Delete</a><br><br>
+ 
+          </div>
+         </div>
+      {% endfor %}
+    {% else %}
+       <p>No flagged influencers found.</p>
+    {% endif %}
+    <a href="{{url_for('admin_dashboard')}}" class="btn btn-primary">Back to Dashboard</a><br><br>
+</div>
+{% endblock %}

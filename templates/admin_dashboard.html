@@ -9,17 +9,12 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">
-              <a class="nav-link active" href="{{url_for('logout')}}">View Influencers</a>
+              <a class="nav-link active" href="{{url_for('admin_view_influencers')}}">View Influencers</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link active" href="{{url_for('logout')}}">View Influencers</a>
+                <a class="nav-link active" href="{{url_for('admin_view_flagged_influencers')}}">View Flagged Influencers</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="{{url_for('logout')}}">View Influencers</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="{{url_for('logout')}}">Logout</a>
-            </li>
+       
             <li class="nav-item">
               <a class="nav-link active" href="{{url_for('logout')}}">Logout</a>
             </li>
@@ -72,29 +67,18 @@
     </div>
 
     <div class="mt-4">
-       <h2>Ongoing Campaigns</h2>
-       {% for campaign in ongoing_campaigns %}
-       <div class="card mb-3">
-         <div class="card-body">
-            <h5 class="card-title">{{campaign.name}}</h5>
-            <p class="card-text">Progress:{{campaign.progress}}%</p>
-            <a href="{{url_for('admin_view_campaign',campaign_id=campaign.id)}}" class="btn btn-primary">View</a>
-         </div>       
-       </div>
-       {% endfor %}
+        <h2>Ongoing Campaigns</h2>
+        {% if ongoing_campaigns %}
+            <ul>
+                {% for campaign in ongoing_campaigns %}
+                    <li>{{ campaign.name }} - <a href="{{ url_for('admin_view_campaign', campaign_id=campaign.id) }}" class="btn btn-primary">View</a></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No ongoing campaigns.</p>
+        {% endif %}
     </div> 
-    <div class="mt-4">
-       <h2>Flagged Items</h2>
-       {% for item in flagged_items %}
-        <div class="card mb-3">
-          <div class="card-body">
-            <h5 class="card-title">{{item.name}}</h5>
-            <a href="{{url_for('admin_view_campaign',campaign_id=campaign.id)}}" class="btn btn-primary">View</a>
-            <a href="{{url_for('remove_item',item_id=item.id)}}" class="btn btn-primary">Remove</a>
-        </div>       
-    </div>
-    {% endfor %}
-    </div>
+   
 </div>
 {% endblock %}
 
