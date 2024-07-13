@@ -539,6 +539,7 @@ def confirm_completion(campaign_id):
     campaign = Campaign.query.get_or_404(campaign_id)
     if campaign:
         campaign.completion_status = True
+        campaign.status='Completed'
         db.session.commit()
         flash('Campaign completion confirmed!', 'success')
     return redirect(url_for('sponsor_dashboard'))
@@ -690,4 +691,3 @@ def make_payment(campaign_id):
 
 password = 'admin'  
 password_hash = generate_password_hash(password)
-print(f"Hashed Password: {password_hash}")
