@@ -48,12 +48,12 @@ def influencer_stats():
 
      active_campaigns = db.session.query(db.func.count(Campaign.id)) \
         .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'active') \
+        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'In Progress') \
         .scalar()
 
      completed_campaigns = db.session.query(db.func.count(Campaign.id)) \
         .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'completed') \
+        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'Completed') \
         .scalar()
 
      influencer_stats = {
@@ -594,6 +594,7 @@ def delete_ad_request(request_id):
 @auth_required
 def create_ad_request(campaign_id, influencer_id):
     influencer = Influencer.query.get_or_404(influencer_id)
+    campaign = Campaign.query.get_or_404(campaign_id)
     if request.method == 'POST':
         requirements = request.form.get('requirements')
         payment_amount = request.form.get('payment_amount')
@@ -618,8 +619,6 @@ def create_ad_request(campaign_id, influencer_id):
     if influencer.flagged:
         flash('You cannot create ad requests for this influencer because they are flagged.', 'danger')
         return redirect(url_for('find_influencers'))
-    campaign = Campaign.query.get_or_404(campaign_id)
-
     return render_template('new_ad_request.html', campaign=campaign, influencer=influencer)
     
 @app.route('/confirm_completion/<int:campaign_id>', methods=['POST'])
@@ -643,10 +642,11 @@ def confirm_completion(campaign_id):
 @auth_required
 def find_influencers():
     influencers=[]
+    campaigns=Campaign.query.all()
     if request.method=='POST':
         niche=request.form.get('niche')
         min_followers = request.form.get('min_followers', 0)
-        campaign_id=1
+        campaign_id=request.form.get('campaign_id')
         query=Influencer.query.filter(Influencer.flagged==False)
         if niche:
             query=query.filter(Influencer.niche.ilike(f"%{niche}%"))
@@ -656,7 +656,7 @@ def find_influencers():
         influencers=query.all()    
         campaigns = Campaign.query.all() 
         return render_template('find_influencers.html',influencers=influencers,campaign_id=campaign_id,campaigns=campaigns)
-    return render_template('find_influencers.html')
+    return render_template('find_influencers.html',campaigns=campaigns)
 
 
 
