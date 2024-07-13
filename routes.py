@@ -400,9 +400,15 @@ def find_campaigns():
     if current_user.flagged:
         flash('You have been flagged by the Admin. You can not find any campaigns.','danger')
         return redirect(url_for('influencer_dashboard'))
+    influencer_id=session.get('user_id')
+    influencer=Influencer.query.get(influencer_id)
+    niche=Influencer.niche
     if request.method=='POST':
         pass
-    campaigns=Campaign.query.filter(Campaign.sponsor_id.isnot(None)).all()
+    campaigns = Campaign.query.filter(
+        (Campaign.visibility == 'public') |
+        ((Campaign.visibility == 'private') & (Campaign.niche == niche))
+    ).all()
     return render_template('find_campaigns.html',campaigns=campaigns)
 
 @app.route('/influencer/view_campaign_details/<int:campaign_id>',methods=['GET','POST'])
