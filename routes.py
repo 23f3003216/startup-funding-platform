@@ -501,6 +501,10 @@ def delete_campaign(campaign_id):
 @app.route('/sponsor/create_ad_request/<int:campaign_id>/<int:influencer_id>', methods=['GET', 'POST'])
 @auth_required
 def create_ad_request(campaign_id, influencer_id):
+    if influencer.flagged:
+        flash('You cannot create ad requests for this influencer because they are flagged.', 'danger')
+        return redirect(url_for('find_influencers'))
+    
     if request.method == 'POST':
         requirements = request.form.get('requirements')
         payment_amount = request.form.get('payment_amount')
@@ -558,7 +562,7 @@ def find_influencers():
         niche=request.form.get('niche')
         min_followers = request.form.get('min_followers', 0)
         campaign_id=1
-        query=Influencer.query
+        query=Influencer.query.filter(Influencer.flagged==False)
         if niche:
             query=query.filter(Influencer.niche.ilike(f"%{niche}%"))
         if min_followers:
