@@ -404,8 +404,13 @@ def find_campaigns():
     influencer=Influencer.query.get(influencer_id)
     niche=Influencer.niche
     if request.method=='POST':
-        pass
-    campaigns = Campaign.query.filter(
+        search_query=request.form.get('searchQuery','').strip()
+        campaigns = Campaign.query.filter(
+        (Campaign.visibility == 'public') |
+        ((Campaign.visibility == 'private') & (Campaign.niche == niche)) &
+        (Campaign.status != 'Completed') & (Campaign.name.ilike(f'%{search_query}%'))).all()
+    else:
+        campaigns = Campaign.query.filter(
         (Campaign.visibility == 'public') |
         ((Campaign.visibility == 'private') & (Campaign.niche == niche)) &
         (Campaign.status != 'Completed')
