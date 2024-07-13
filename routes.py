@@ -217,50 +217,64 @@ def index():
 
         return render_template('index.html',user=user)
 
-
-
-@app.route('/profile',methods=['GET','POST'])
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    if request.method=='GET':
+    if request.method == 'GET':
+        if 'user_id' in session:
+            user_id = session['user_id']
+            user = User.query.get(user_id)
+            if not user:
+                flash('User not found. Please log in again.')
+                return redirect(url_for('login'))
+            return render_template('profile.html', user=user)
+        else:
+            flash('Kindly log in first.')
+            return redirect(url_for('login'))
 
-     if 'user_id' in session:
-       user_id=session['user_id']
-       user=User.query.get(user_id)
-       if not user:
-           flash('User not found. Please log in again.')
-           return redirect(url_for('login'))
-       return render_template('profile.html', user=user)
-     else:
-        flash('Kindly login first.')
-        return redirect(url_for('login'))
-    
-    elif request.method=='POST':
-        username=request.form.get('username')
-        cpassword=request.form.get('cpassword')
-        password=request.form.get('password')
-        name=request.form.get('name')
+    elif request.method == 'POST':
+        username = request.form.get('username')
+        cpassword = request.form.get('cpassword')
+        password = request.form.get('password')
+        name = request.form.get('name')
 
         if not username or not cpassword or not password:
             flash('Please fill all the details')
             return redirect(url_for('profile'))
-        user=User.query.get(session['user_id'])
-        if not check_password_hash(user.passhash,cpassword):
+
+        user = User.query.get(session['user_id'])
+        if not check_password_hash(user.passhash, cpassword):
             flash('Incorrect password')
             return redirect(url_for('profile'))
-        if username!=user.username:
-            new_username=User.query.filter_by(username=username).first()
+
+        if username != user.username:
+            new_username = User.query.filter_by(username=username).first()
             if new_username:
                 flash('Username already exists.')
                 return redirect(url_for('profile'))
-        new_password_hash=generate_password_hash(password)
-        user.username=username
-        user.passhash=new_password_hash
-        user.name=name
+
+        new_password_hash = generate_password_hash(password)
+        user.username = username
+        user.passhash = new_password_hash
+        user.name = name
+
+     
+        if user.user_type == 'influencer':
+            if user.influencer:
+                user.influencer.platform = request.form.get('platform')
+                user.influencer.niche = request.form.get('niche')
+                user.influencer.reach = request.form.get('reach')
+            else:
+            
+                platform = request.form.get('platform')
+                niche = request.form.get('niche')
+                reach = request.form.get('reach')
+                influencer = Influencer(id=user.id, platform=platform, niche=niche, reach=reach)
+                db.session.add(influencer)
+
         db.session.commit()
         flash('Profile Successfully Updated.')
         return redirect(url_for('profile'))
 
-    
 
     
 @app.route('/logout')

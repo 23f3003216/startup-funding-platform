@@ -7,14 +7,14 @@
 {% block content %}
 <h1 class="display-1">
     Hello
-    <span class="text-muted">@{{user.username}}</span>
+    <span class="text-muted">@{{ user.username }}</span>
 </h1>
-<a href="{{url_for('logout')}}" class="btn btn-outlibe-danger">Logout</a>
+<a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
 
-<form action="{{url_for('profile')}}" class="my-form" method="post">
+<form action="{{ url_for('profile') }}" class="my-form" method="post">
     <div class="form-group">
         <label for="username" class="form-label">Username</label>
-        <input type="text" name="username" id="username" value="{{user.username}}" class="form-control">
+        <input type="text" name="username" id="username" value="{{ user.username }}" class="form-control">
     </div>
     <div class="form-group">
         <label for="cpassword" class="form-label">Current Password</label>
@@ -25,12 +25,62 @@
         <input type="password" name="password" id="password" class="form-control">
     </div>
     <div class="form-group">
-        <label for="name" class="form-label">Name</label>    
-        <input type="text" name="name" id="name" value="{{user.name}}" class="form-control">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" name="name" id="name" value="{{ user.name }}" class="form-control">
+    </div>
+
+    {% if user.user_type == 'influencer' %}
+    {% if user.influencer %}
+    <div class="form-group">
+        <label for="platform" class="form-label">Platform</label>
+        <select name="platform" id="platform" class="form-control">
+            <option value="">Select Platform</option>
+            <option value="Youtube" {% if user.influencer.platform == 'Youtube' %} selected {% endif %}>Youtube</option>
+            <option value="Instagram" {% if user.influencer.platform == 'Instagram' %} selected {% endif %}>Instagram</option>
+            <option value="Facebook" {% if user.influencer.platform == 'Facebook' %} selected {% endif %}>Facebook</option>
+            <option value="Linkedin" {% if user.influencer.platform == 'Linkedin' %} selected {% endif %}>Linkedin</option>
+        </select>
     </div>
     <div class="form-group">
-        <button type="submit" class="btn btn-primary">Update</button>
+        <label for="niche" class="form-label">Niche</label>
+        <select name="niche" id="niche" class="form-control">
+            <option value="">Select Niche</option>
+            <option value="Cooking" {% if user.influencer.niche == 'Cooking' %} selected {% endif %}>Cooking</option>
+            <option value="Technology" {% if user.influencer.niche == 'Technology' %} selected {% endif %}>Technology</option>
+            <option value="Gaming" {% if user.influencer.niche == 'Gaming' %} selected {% endif %}>Gaming</option>
+            <option value="Education" {% if user.influencer.niche == 'Education' %} selected {% endif %}>Education</option>
+            <option value="Vlogging" {% if user.influencer.niche == 'Vlogging' %} selected {% endif %}>Vlogging</option>
+            <option value="Fashion" {% if user.influencer.niche == 'Fashion' %} selected {% endif %}>Fashion</option>
+            <option value="Travel" {% if user.influencer.niche == 'Travel' %} selected {% endif %}>Travel</option>
+            <option value="Fitness" {% if user.influencer.niche == 'Fitness' %} selected {% endif %}>Fitness</option>
+            <option value="Beauty" {% if user.influencer.niche == 'Beauty' %} selected {% endif %}>Beauty</option>
+            <option value="Health" {% if user.influencer.niche == 'Health' %} selected {% endif %}>Health</option>
+        </select>
     </div>
-</form>
+    <div class="form-group">
+        <label for="reach" class="form-label">Reach</label>
+        <input type="text" name="reach" id="reach" value="{{ user.influencer.reach }}" class="form-control">
+    </div>
+    {% else %}
+    <div class="form-group">
+        <label for="platform" class="form-label">Platform</label>
+        <input type="text" name="platform" id="platform" class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="niche" class="form-label">Niche</label>
+        <input type="text" name="niche" id="niche" class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="reach" class="form-label">Reach</label>
+        <input type="number" name="reach" id="reach" class="form-control">
+    </div><br><br>
+    {% endif %}
+    {% endif %}
 
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="{{url_for('influencer_dashboard')}}" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+
+</form>
 {% endblock %}
