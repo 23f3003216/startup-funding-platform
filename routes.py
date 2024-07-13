@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash,check_password_hash
 from functools import wraps
 from app import app,db,login_manager
 from datetime import date,datetime
-
+from sqlalchemy.orm import joinedload
 from models import User,AdRequest,Campaign,Admin,Influencer,Sponsor,InfluencerDetails, update_user_types
 
 stats_bp=Blueprint('stats',__name__)
@@ -216,6 +216,16 @@ def index():
             return render_template('influencer_dashboard',user=user)
 
         return render_template('index.html',user=user)
+
+@app.route('/profile/<username>')
+def public_profile(username):
+            user = User.query.filter_by(username=username).options(joinedload(User.influencer)).first()
+            if not user:
+                flash('User not found.')
+                return redirect(url_for('index'))
+            influencer=user.influencer
+            return render_template('public_profile.html', user=user,influencer=influencer)
+
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():

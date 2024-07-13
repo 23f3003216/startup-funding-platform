@@ -1,0 +1,22 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+    Profile of {{user.username}}
+{% endblock %}
+
+{% block content %}
+<h1 class="display-1">
+    Hello,this is the Public Profile Page of {{user.username}}
+    <span class="text-muted">@{{ user.username }}</span>
+</h1>
+<div>
+    <p>Username: {{user.username}}</p>
+    <p>Name:{{user.name}}</p>
+    {% if influencer %}
+    <p>Platform:{{influencer.platform}}</p>
+    <p>Reach:{{influencer.reach}}</p>
+    <p>Niche:{{influencer.niche}}</p>
+    {% endif %}
+</div>
+<a href="{{url_for('index')}}" class="btn btn-primary">Back to Home Page</a>
+{% endblock %}

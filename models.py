@@ -16,6 +16,7 @@ class User(db.Model,UserMixin):
     name = Column(String(64), nullable=True)
     flagged = Column(Boolean, default=False)
     user_type = Column(String(50),nullable=False,default='user')
+    influencer = db.relationship('Influencer', backref='user', uselist=False)
 
     __mapper_args__ = {
         'polymorphic_identity': 'user',
