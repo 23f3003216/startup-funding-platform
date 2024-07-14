@@ -482,7 +482,8 @@ def sponsor_dashboard():
     if not sponsor:
         flash('Not Found!','danger')
         return redirect(url_for('login'))
-    active_campaigns=Campaign.query.filter_by(sponsor_id=sponsor.id).all()
+    campaigns = Campaign.query.filter(Campaign.sponsor_id == sponsor.id).all()
+    active_campaigns = [campaign for campaign in campaigns if campaign.status not in ['Completed', 'Payment Completed']]
     new_requests=AdRequest.query.join(Campaign).filter(Campaign.sponsor_id==sponsor.id,AdRequest.status=='Pending').all()
     total_allocated_budget=sum(campaign.budget for campaign in active_campaigns if campaign.status !='Completed')
     remaining_budget=sponsor.overall_budget-total_allocated_budget
