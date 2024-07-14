@@ -6,14 +6,23 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="display-4">{{campaign.name}}</h1>
-    <p>Description: {{campaign.description}}</p>
-    <p>Start Date: {{campaign.start_date}}</p>
-    <p>End Date: {{campaign.end_date}}</p>
-    {% if current_user.is_influencer %}
-    <form action="{{ url_for('mark_completed', campaign_id=campaign.id) }}" method="post">
-      <button type="submit" class="btn btn-success">Mark as Completed</button>
-    </form>
+    {% if campaign %}
+        <h1 class="display-4">{{ campaign.name }}</h1>
+        <p>Description: {{ campaign.description }}</p>
+        <p>Start Date: {{ campaign.start_date }}</p>
+        <p>End Date: {{ campaign.end_date }}</p>
     {% endif %}
+
+    {% if ad_request %}
+        <h1>Ad Request Details</h1>
+        <p><strong>Requirements:</strong> {{ ad_request.requirements }}</p>
+        <p><strong>Payment:</strong> {{ ad_request.payment_amount }}</p>
+    {% else %}
+        <p>No ad request found for this campaign.</p>
+    {% endif %}
+    
+    <div class="mt-3">
+        <a href="{{ url_for('influencer_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
 </div>
 {% endblock %}

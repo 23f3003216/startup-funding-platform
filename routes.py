@@ -446,24 +446,13 @@ def find_campaigns():
     ).all()
     return render_template('find_campaigns.html',campaigns=campaigns)
 
-@app.route('/influencer/view_campaign_details/<int:campaign_id>',methods=['GET','POST'])
+@app.route('/influencer/view_campaign_details/<int:campaign_id>',methods=['GET'])
 @auth_required
 def view_campaign_details(campaign_id):
           campaign=Campaign.query.get_or_404(campaign_id)
-          ad_request=AdRequest.query.filter_by(campaign_id=campaign_id).first()
-          if request.method=='POST':
-                 ad_name=request.form.get('ad_name')
-                 description=request.form.get('description')
-                 terms=request.form.get('terms')
-                 payment=request.form.get('payment')
-                 influencer_id=request.form.get('influencer_id')
-                 combined_description = f"Ad Name: {ad_name}\nDescription: {description}\nTerms: {terms}"
-                 new_ad_request=AdRequest(requirements=combined_description,campaign_id=campaign_id,influencer_id=influencer_id,payment_amount=payment,status='Pending')
-                 db.session.add(new_ad_request)
-                 db.session.commit()
-                 flash("Ad Request created successfully")
-                 return redirect(url_for('influencer_dashboard'))
-
+          ad_request=AdRequest.query.filter_by(campaign_id=campaign_id,influencer_id=current_user.id).first()
+          if ad_request is None:
+              flash("No Ad Request found for this Camapign.")
           return render_template('view_campaign_details.html',campaign=campaign,ad_request=ad_request)
 
 @app.route('/mark_completed/<int:campaign_id>', methods=['POST'])
@@ -788,3 +777,11 @@ def make_payment(campaign_id):
 
 password = 'admin'  
 password_hash = generate_password_hash(password)
+
+
+
+
+
+
+
+
