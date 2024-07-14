@@ -754,7 +754,7 @@ def reject_request(request_id):
 def completed_requests():
     if not isinstance(current_user,Sponsor):
         return "Unauthorized", 403
-    completed_campaigns=Campaign.query.filter_by(sponsor_id=current_user.id,status='Completed').all()
+    completed_campaigns=Campaign.query.filter(Campaign.sponsor_id==current_user.id, Campaign.status.in_(['Completed','Payment Completed'])).all()
     return render_template('completed_requests.html', completed_campaigns= completed_campaigns)
     
 
@@ -765,13 +765,15 @@ def completed_requests():
 def make_payment(campaign_id):
      if not isinstance(current_user,Sponsor):
         return "Unauthorized", 403
+     campaign = Campaign.query.get_or_404(campaign_id)
      if request.method=='POST':
         card_number=request.form['card_number']
         expiration_date=request.form['expiration_date']
         cvv=request.form['cvv']
+        campaign.status='Payment Completed'
+        db.session.commit()
         flash("Payment Successfully done",'sucess')
         return redirect(url_for('completed_requests'))
-     campaign = Campaign.query.get_or_404(campaign_id)
      return render_template('make_payment.html',campaign=campaign)
 
 
