@@ -105,6 +105,9 @@ class Influencer(User):
         self.platform = platform
         self.niche = niche
         self.reach = reach
+    @property
+    def niche_display(self):
+        return self.niche.value
     def is_authenticated(self):
         return True  
 

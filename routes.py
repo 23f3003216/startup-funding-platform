@@ -21,12 +21,12 @@ def sponsor_stats():
 
     active_campaigns = db.session.query(db.func.count(Campaign.id)) \
         .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'active') \
+        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'In Progress') \
         .scalar()
 
     completed_campaigns = db.session.query(db.func.count(Campaign.id)) \
         .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'completed') \
+        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'Payment Completed') \
         .scalar()
 
     sponsor_stats = {

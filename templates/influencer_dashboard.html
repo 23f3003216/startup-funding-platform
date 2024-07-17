@@ -43,8 +43,9 @@
                             {% else %}
                                 <img src="{{ url_for('static', filename='profile_pictures/default.jpg') }}" class="img-fluid rounded-circle mb-3" alt="Profile Picture">
                             {% endif %}
-                            <p class="card-text">Rating: {{ details.rating }}</p>
-                            <p class="card-text">Earnings this month: Rs {{ details.earnings }}</p>
+                            <p class="card-text">Platform: {{ user.platform }}</p>
+                            <p class="card-text">Reach: {{   user.reach}}</p>
+                            <p class="card-text">Niche: {{   user.niche_display}}</p>
                         </div>
                     </div>
                 </div>
