@@ -57,9 +57,13 @@
                             <div class="card-body">
                                 <h5 class="card-title">{{ campaign.name }}</h5>
                                 <a href="{{ url_for('view_campaign_details', campaign_id=campaign.id) }}" class="btn btn-primary">View</a><br><br>
-                                <form method="POST" action="{{ url_for('mark_completed', campaign_id=campaign.id) }}">
+                                {% if campaign.completion_status %}
+                                    <p class="text-success">Completed</p>
+                                {% else %}
+                                  <form method="POST" action="{{ url_for('mark_completed', campaign_id=campaign.id) }}">
                                     <button type="submit" class="btn btn-success">Mark as Completed</button>
-                                </form>
+                                   </form>
+                                {% endif %}
                             </div>
                         </div>
                     {% endfor %}
