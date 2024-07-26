@@ -43,7 +43,6 @@
               <div class="card">
                  <div class="card-body">
                     <h5 class="card-title">{{ campaign.name}}</h5>
-                    <p class="card-text"> Progress:{{campaign.progress}}</p>
                     <p> Completion Status: {{ 'Completed' if campaign.completion_status else 'In Progress' }}</p>
                     <a href="{{url_for('view_campaign', campaign_id=campaign.id)}}" class="btn btn-primary">View</a>
                     {% if campaign.completion_status %}

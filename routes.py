@@ -780,7 +780,7 @@ def make_payment(campaign_id):
 
 password = 'admin'  
 password_hash = generate_password_hash(password)
-
+print(password_hash)
 
 
 

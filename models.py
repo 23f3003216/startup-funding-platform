@@ -121,6 +121,7 @@ class Influencer(User):
         return str(self.id)
 
     influencer_ad_requests = relationship('AdRequest', backref='influencer_relation', overlaps="influencer_ad_requests,influencer_relation")
+    
 
 
 class InfluencerDetails(db.Model):
@@ -131,7 +132,7 @@ class InfluencerDetails(db.Model):
     earnings = Column(Float, default=0.0)
     rating= Column(Float, default=0.0)
 
-    influencer=relationship('Influencer',backref='details')
+    influencer=relationship('Influencer',backref=backref('details',cascade='all,delete-orphan'))
 
 
 
