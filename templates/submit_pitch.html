@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}Submit Pitch for {{ campaign.title }}{% endblock %}
+
+{% block content %}
+<h1>Submit Pitch for "{{ campaign.title }}"</h1>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5>Description:</h5>
+    <p>{{ campaign.description }}</p>
+    <p><strong>Budget:</strong> ₹{{ campaign.budget }}</p>
+    <p><strong>Deadline:</strong> {{ campaign.deadline.strftime('%d %b %Y') }}</p>
+  </div>
+</div>
+
+<form method="POST">
+  <div class="mb-3">
+    <label for="pitch_text" class="form-label">Your Pitch</label>
+    <textarea class="form-control" id="pitch_text" name="pitch_text" rows="5" required></textarea>
+  </div>
+
+  <div class="mb-3">
+    <label for="proposed_amount" class="form-label">Proposed Amount (₹)</label>
+    <input type="number" class="form-control" id="proposed_amount" name="proposed_amount" min="0" max="{{ campaign.budget }}" step="0.01" required>
+  </div>
+
+  <button type="submit" class="btn btn-success">Submit Pitch</button>
+  <a href="{{ url_for('view_campaigns') }}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

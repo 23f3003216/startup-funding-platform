@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}Create New Funding Campaign{% endblock %}
+
+{% block content %}
+<h2>Create New Funding Campaign</h2>
+
+<form method="POST" action="{{ url_for('new_funding_campaign') }}">
+    <div class="form-group">
+        <label for="title">Title:</label>
+        <input type="text" class="form-control" name="title" required>
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description:</label>
+        <textarea class="form-control" name="description" required></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="sector">Sector:</label>
+        <select class="form-control" name="sector" required>
+            {% for sector in sectors %}
+                <option value="{{ sector }}">{{ sector }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="budget">Budget (₹):</label>
+        <input type="number" class="form-control" name="budget" step="0.01" required>
+    </div>
+
+    <div class="form-group">
+        <label for="deadline">Deadline:</label>
+        <input type="date" class="form-control" name="deadline" required>
+    </div>
+
+    <button type="submit" class="btn btn-success mt-3">Create Campaign</button>
+    
+</form>
+<!-- 🔙 Back Button -->
+
+<a href="{{ url_for('investor_dashboard') }}" class="btn btn-secondary mb-4">← Back to Dashboard</a>
+{% endblock %}

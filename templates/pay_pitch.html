@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block title %}Dummy Payment{% endblock %}
+
+{% block content %}
+<h2>Make Dummy Payment to {{ pitch.startup_relation.username }}</h2>
+
+<p>Pitch Proposed Amount: ₹{{ pitch.proposed_amount }}</p>
+
+<form method="POST">
+  <div class="mb-3">
+    <label for="amount" class="form-label">Amount to Pay (₹)</label>
+    <input type="number" step="0.01" name="amount" id="amount" class="form-control" max="{{ pitch.proposed_amount }}" required>
+  </div>
+  <button type="submit" class="btn btn-success">Pay</button>
+  <a href="{{ url_for('investor_dashboard') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

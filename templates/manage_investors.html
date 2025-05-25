@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block title %}Manage Investors{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Manage Investors</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Budget</th>
+        <th>Industry</th>
+        <th>Flagged</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for investor in investors %}
+      <tr>
+        <td>{{ investor.name }}</td>
+        <td>{{ investor.overall_budget }}</td>
+        <td>{{ investor.industry }}</td>
+        <td>
+          {% if investor.flagged %}
+            <span class="badge bg-danger">Flagged</span>
+          {% else %}
+            <span class="badge bg-success">Active</span>
+          {% endif %}
+        </td>
+        <td>
+          <form action="{{ url_for('flag_investor', investor_id=investor.id) }}" method="post" style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-warning">
+              {% if investor.flagged %}Unflag{% else %}Flag{% endif %}
+            </button>
+          </form>
+          <form action="{{ url_for('delete_investor', investor_id=investor.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this investor?');">
+            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+        <tr>
+          <td colspan="5" class="text-center">No investors found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

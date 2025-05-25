@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block title %}Startup Dashboard - Funding Platform{% endblock %}
+
+{% block content %}
+<h1>Welcome, {{ current_user.username }}</h1>
+
+<h2 class="mb-4 mt-4">Search Your Pitch Requests</h2>
+
+<form method="get" action="{{ url_for('startup_dashboard') }}" class="row g-3 mb-4">
+  <div class="col-md-4">
+    <input type="text" name="campaign_title" class="form-control" placeholder="Campaign Title"
+           value="{{ request.args.get('campaign_title', '') }}">
+  </div>
+  <div class="col-md-3">
+    <select name="status" class="form-select">
+      <option value="">All Statuses</option>
+      <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="accepted" {% if request.args.get('status') == 'accepted' %}selected{% endif %}>Accepted</option>
+      <option value="rejected" {% if request.args.get('status') == 'rejected' %}selected{% endif %}>Rejected</option>
+      <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <input type="number" step="0.01" name="min_amount" class="form-control" placeholder="Min Proposed Amount"
+           value="{{ request.args.get('min_amount', '') }}">
+  </div>
+  <div class="col-md-1 d-grid">
+    <button type="submit" class="btn btn-primary">Search</button>
+  </div>
+  <div class="col-md-1 d-grid">
+    <a href="{{ url_for('startup_dashboard') }}" class="btn btn-secondary">Clear</a>
+  </div>
+</form>
+
+<h3>Your Pitch Requests</h3>
+
+{% if pitch_requests %}
+  <ul class="list-group">
+    {% for pitch in pitch_requests %}
+      <li class="list-group-item">
+        <strong>Campaign:</strong> {{ pitch.campaign_relation.title }} <br>
+        <strong>Proposed Amount:</strong> ₹{{ pitch.proposed_amount }} <br>
+        <strong>Status:</strong> 
+        {% if pitch.status == 'pending' %}
+          <span class="badge bg-warning text-dark">Pending</span>
+        {% elif pitch.status == 'accepted' %}
+          <span class="badge bg-success">Accepted</span>
+        {% elif pitch.status == 'rejected' %}
+          <span class="badge bg-danger">Rejected</span>
+        {% elif pitch.status == 'completed' %}
+          <span class="badge bg-secondary">Completed</span>
+        {% else %}
+          {{ pitch.status }}
+        {% endif %}
+        <br>
+        <strong>Pitch Text:</strong> {{ pitch.pitch_text | truncate(150) }} <br>
+        <a href="{{ url_for('view_campaign', campaign_id=pitch.campaign_id) }}" class="btn btn-sm btn-primary mt-1">View Campaign</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>You have not submitted any pitch requests yet.</p>
+  <a href="{{ url_for('view_campaigns') }}" class="btn btn-success">View Available Campaigns</a>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Available Funding Campaigns</h2>
+
+{% if campaigns %}
+    <ul>
+    {% for campaign in campaigns %}
+        <li>
+            <strong>{{ campaign.title }}</strong><br>
+            Sector: {{ campaign.sector.value }}<br>
+            Budget: ₹{{ campaign.budget }}<br>
+            Deadline: {{ campaign.deadline.strftime('%Y-%m-%d') }}<br>
+            <a href="{{ url_for('submit_pitch', campaign_id=campaign.id) }}">Submit Pitch</a>
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No campaigns available at the moment.</p>
+{% endif %}
+
+<a href="{{ url_for('startup_dashboard') }}">Back to Dashboard</a>
+{% endblock %}

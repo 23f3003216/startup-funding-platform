@@ -1,790 +1,603 @@
-from flask import Flask,render_template,request,flash,redirect,url_for,session,Blueprint
+from flask import render_template, redirect, url_for, request, flash
+from app import app, db
+from models import User, Admin, Investor, Startup, FundingCampaign, PitchRequest
+from models import SectorEnum
+
+from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash,check_password_hash
-from functools import wraps
-from app import app,db,login_manager
-from datetime import date,datetime
-from sqlalchemy.orm import joinedload
-from models import User,AdRequest,Campaign,Admin,Influencer,Sponsor,InfluencerDetails, update_user_types
+from datetime import date
 
-stats_bp=Blueprint('stats',__name__)
+# --- Authentication Routes ---
 
-@login_required
-@stats_bp.route('/sponsor/stats')
-def sponsor_stats():
-    if not isinstance(current_user, Sponsor):
-        return "Unauthorized", 403
-    total_campaigns = db.session.query(db.func.count(Campaign.id)) \
-        .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id) \
-        .scalar()
-
-    active_campaigns = db.session.query(db.func.count(Campaign.id)) \
-        .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'In Progress') \
-        .scalar()
-
-    completed_campaigns = db.session.query(db.func.count(Campaign.id)) \
-        .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'Payment Completed') \
-        .scalar()
-
-    sponsor_stats = {
-        'total_campaigns': total_campaigns,
-        'active_campaigns': active_campaigns,
-        'completed_campaigns': completed_campaigns
-    }
-    return render_template('sponsor_stats.html',stats=sponsor_stats)
-
-@stats_bp.route('/influencer/stats')
-
-def influencer_stats():
-     if not isinstance(current_user, Influencer):
-        return "Unauthorized", 403
-     total_campaigns = db.session.query(db.func.count(Campaign.id)) \
-        .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id) \
-        .scalar()
-
-     active_campaigns = db.session.query(db.func.count(Campaign.id)) \
-        .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'In Progress') \
-        .scalar()
-
-     completed_campaigns = db.session.query(db.func.count(Campaign.id)) \
-        .join(AdRequest, AdRequest.campaign_id == Campaign.id) \
-        .filter(AdRequest.influencer_id == current_user.id, Campaign.status == 'Completed') \
-        .scalar()
-
-     influencer_stats = {
-        'total_campaigns': total_campaigns,
-        'active_campaigns': active_campaigns,
-        'completed_campaigns': completed_campaigns}
-     return render_template('influencer_stats.html',stats=influencer_stats)
-
-def create_admin_user():
-    admin=User.query.filter_by(user_type='admin').first()
-    if not admin:
-        password_hash = generate_password_hash('admin')  
-        admin = Admin(username='admin', passhash=password_hash,user_type='admin')
-        db.session.add(admin)
-        db.session.commit()
-        print("Admin user created successfully.") 
-    else:
-        print("Admin user already exists.") 
-
-def setup():
-    db.create_all()
-    create_admin_user()
-    update_user_types() 
-
-def auth_required(func):
-    @wraps(func)
-    def inner(*args,**kwargs):
-        if 'user_id' in session:
-            return func(*args,**kwargs)
-        else:
-           flash('Kindly login first.')
-           return redirect(url_for('login'))
-    return inner
-
-
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.passhash, password):
+            login_user(user)
+            flash('Logged in successfully.', 'success')
+            # Redirect based on user type
+            if user.user_type == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            elif user.user_type == 'investor':
+                return redirect(url_for('investor_dashboard'))
+            elif user.user_type == 'startup':
+                return redirect(url_for('startup_dashboard'))
+            else:
+                return redirect(url_for('index'))
+        else:
+            flash('Invalid username or password.', 'danger')
     return render_template('login.html')
 
-@app.route('/login',methods=['POST'])
-def login_post():
-    username=request.form.get('username')
-    password=request.form.get('password')
-    if not username or not password:
-        flash('Please fill all the details.')
-        return redirect(url_for('login'))
-    user=User.query.filter_by(username=username).first()
-    if not user:
-        flash('Username does not exist.')
-        return redirect(url_for('login'))
-    if not check_password_hash(user.passhash,password):
-        flash('Password is incorrect')
-        return redirect(url_for('login'))
-    
-    login_user(user)
-    session['user_id']=user.id
-    flash('Login Successfully done')
-    if user.user_type=='admin':
-        return redirect(url_for('admin_dashboard'))
-    elif user.user_type=='sponsor':
-        return redirect(url_for('sponsor_dashboard'))
-    elif user.user_type=='influencer':
-        return redirect(url_for('influencer_dashboard'))
-    return redirect(url_for('index'))
-
-if __name__== '__main__':
-          setup()
-          app.run(debug=True)
-
-
-
-
-
-@app.route('/register/influencer',methods=(['GET','POST']))
-def register_influencer():
-    if request.method=='GET':
-        return render_template('register_influencer.html')
-    elif request.method=='POST':
-        username=request.form.get('username')
-        password=request.form.get('password')
-        confirm_password=request.form.get('confirm_password')
-        name=request.form.get('name')
-        platform=request.form.get('platform')
-        niche = request.form['niche']
-        reach = request.form.get('reach',0)
-        if not username or not password or not confirm_password or not platform:
-           flash('Please fill out all the details.')
-           return redirect(url_for('register_influencer'))
-        if password!=confirm_password:
-            flash('Passwords do not match.')
-            return redirect(url_for('register_influencer'))
-        user=User.query.filter_by(username=username).first()
-        if user:
-            flash('Username is already taken.')
-            return redirect(url_for('register_influencer'))
-        password_hash=generate_password_hash(password)
-
-
-        new_influencer = Influencer(username=username, passhash=password_hash, name=name, platform=platform,niche=niche,reach=int(reach) if reach else None )
-        db.session.add(new_influencer)
-        db.session.commit()
-        flash('Registeration as an Influencer completed Successfully.Please login now.')
-        return redirect (url_for('login'))
-
-@app.route('/register/sponsor',methods=['GET','POST'])
-def register_sponsor():
-    if request.method=='GET':
-        return render_template('register_sponsor.html')
-    elif request.method=='POST':
-        username=request.form.get('username')
-        password=request.form.get('password')
-        confirm_password=request.form.get('confirm_password')
-        name=request.form.get('name')
-        industry=request.form.get('industry')
-        overall_budget=request.form.get('overall_budget')
-        
-        if not username or not password or not confirm_password or not industry:
-           flash('Please fill out all the details.')
-           return redirect(url_for('register_sponsor'))
-        if password!=confirm_password:
-           flash('Passwords do not match.')
-           return redirect(url_for('register_sponsor'))
-        user=User.query.filter_by(username=username).first()
-        if user:
-           flash('Username is already taken.')
-           return redirect(url_for('register_sponsor'))
-        password_hash=generate_password_hash(password)
-
-
-        new_sponsor = Sponsor(username=username, passhash=password_hash, name=name, industry=industry,overall_budget=overall_budget)
-        db.session.add(new_sponsor)
-        db.session.commit()
-        flash('Registeration as a Sponsor completed Successfully.Please login now.')
-        return redirect (url_for('login'))
-
-
-
-@app.route('/')
-@auth_required
-def index():
-        user_id=User.query.get(session['user_id'])
-        if not user_id:
-          flash('Kindly login first')
-          return redirect(url_for('login'))
-        try:
-            user_id=int(user_id)
-        except (ValueError,TypeError):
-            flash('Invalid User ID in Session.')
-            return redirect(url_for('login'))
-
-        user=User.query.get(user_id)
-        if not user:
-            flash('User not found.Kindly login again.')
-            return redirect(url_for('login'))
-
-
-        if user.user_type=='admin':
-            return redirect(url_for('admin_dashboard',user=user))
-        elif user.user_type=='sponsor':
-            return render_template('sponsor_dashboard',user=user)
-        elif user.user_type=='influencer':
-            return render_template('influencer_dashboard',user=user)
-
-        return render_template('index.html',user=user)
-
-@app.route('/profile/<username>')
-def public_profile(username):
-            user = User.query.filter_by(username=username).options(joinedload(User.influencer)).first()
-            if not user:
-                flash('User not found.')
-                return redirect(url_for('index'))
-            if user.user_type !='influencer' or not user.influencer:
-                flash('Not a Public Profile.')
-                return redirect(url_for('index'))
-            influencer=user.influencer
-            return render_template('public_profile.html', user=user,influencer=influencer)
-
-
-@app.route('/profile', methods=['GET', 'POST'])
-def profile():
-    if request.method == 'GET':
-        if 'user_id' in session:
-            user_id = session['user_id']
-            user = User.query.get(user_id)
-            if not user:
-                flash('User not found. Please log in again.')
-                return redirect(url_for('login'))
-            return render_template('profile.html', user=user)
-        else:
-            flash('Kindly log in first.')
-            return redirect(url_for('login'))
-
-    elif request.method == 'POST':
-        username = request.form.get('username')
-        cpassword = request.form.get('cpassword')
-        password = request.form.get('password')
-        name = request.form.get('name')
-
-        if not username or not cpassword or not password:
-            flash('Please fill all the details')
-            return redirect(url_for('profile'))
-
-        user = User.query.get(session['user_id'])
-        if not check_password_hash(user.passhash, cpassword):
-            flash('Incorrect password')
-            return redirect(url_for('profile'))
-
-        if username != user.username:
-            new_username = User.query.filter_by(username=username).first()
-            if new_username:
-                flash('Username already exists.')
-                return redirect(url_for('profile'))
-
-        new_password_hash = generate_password_hash(password)
-        user.username = username
-        user.passhash = new_password_hash
-        user.name = name
-
-     
-        if user.user_type == 'influencer':
-            if user.influencer:
-                user.influencer.platform = request.form.get('platform')
-                user.influencer.niche = request.form.get('niche')
-                user.influencer.reach = request.form.get('reach')
-            else:
-            
-                platform = request.form.get('platform')
-                niche = request.form.get('niche')
-                reach = request.form.get('reach')
-                influencer = Influencer(id=user.id, platform=platform, niche=niche, reach=reach)
-                db.session.add(influencer)
-
-        db.session.commit()
-        flash('Profile Successfully Updated.')
-        return redirect(url_for('profile'))
-
-
-    
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    session.pop('user_id',None)
-    flash('Successfully Logged Out')
+    flash('Logged out.', 'info')
     return redirect(url_for('login'))
-  
-@app.route('/admin')
-@auth_required
+
+# --- Home Page ---
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# --- Admin Dashboard ---
+@app.route('/admin/dashboard')
+@login_required
 def admin_dashboard():
+    if not current_user.is_administrator():
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    # Example: Show stats
     total_users = User.query.count()
-    total_sponsors = User.query.filter_by(user_type='sponsor').count()
-    total_influencers = User.query.filter_by(user_type='influencer').count()
-    total_campaigns = Campaign.query.count()
-    total_public_campaigns = Campaign.query.filter_by(visibility='public').count()
-    total_private_campaigns = Campaign.query.filter_by(visibility='private').count()
-    total_ad_requests = AdRequest.query.count()
-    total_pending_requests = AdRequest.query.filter_by(status='Pending').count()
-    total_accepted_requests = AdRequest.query.filter_by(status='Accepted').count()
-    total_rejected_requests = AdRequest.query.filter_by(status='Rejected').count()
-    flagged_users = User.query.filter_by(flagged=True).count()
-    flagged_campaigns = Campaign.query.filter_by(flagged=True).count()
-    ongoing_campaigns_list = Campaign.query.filter(Campaign.end_date >= date.today()).all()
-    flagged_users_list = User.query.filter_by(flagged=True).all()
-    flagged_campaigns_list = Campaign.query.filter_by(flagged=True).all()
-    flagged_items_list = flagged_users_list + flagged_campaigns_list
+    total_investors = Investor.query.count()
+    total_startups = Startup.query.count()
+    total_campaigns = FundingCampaign.query.count()
+    return render_template('admin_dashboard.html',
+                           total_users=total_users,
+                           total_investors=total_investors,
+                           total_startups=total_startups,
+                           total_campaigns=total_campaigns)
+from flask import abort
 
-    return render_template('admin_dashboard.html', total_users=total_users, total_sponsors=total_sponsors,
-                           total_influencers=total_influencers, total_campaigns=total_campaigns,
-                           total_public_campaigns=total_public_campaigns, total_private_campaigns=total_private_campaigns,
-                           total_ad_requests=total_ad_requests, total_pending_requests=total_pending_requests,
-                           total_accepted_requests=total_accepted_requests, total_rejected_requests=total_rejected_requests,
-                           flagged_users=flagged_users, flagged_campaigns=flagged_campaigns,
-                           ongoing_campaigns=ongoing_campaigns_list, flagged_items=flagged_items_list)
+def check_flagged_investor():
+    if current_user.user_type == 'investor' and current_user.flagged:
+        flash('You have been flagged by the admin and cannot access this section.', 'danger')
+        return True
+    return False
+def check_flagged_startup():
+    if current_user.user_type == 'startup' and current_user.flagged:
+        flash('You have been flagged by the admin and cannot access this section.', 'danger')
+        return True
+    return False
 
-@app.route('/admin/view_campaign/<int:campaign_id>')
-@auth_required
-def admin_view_campaign(campaign_id):
-    campaign=Campaign.query.get_or_404(campaign_id)
-    return render_template('admin_view_campaign.html',campaign=campaign)
-
-@app.route('/admin/view_influencers')
-@auth_required
-def admin_view_influencers():
-    influencers = User.query.filter(User.user_type == 'influencer', User.flagged.is_(False)).all()
-    return render_template('admin_view_influencers.html',influencers=influencers)
-
-@app.route('/admin/view_flagged_influencers')
-@auth_required
-def admin_view_flagged_influencers():
-    flagged_influencers=User.query.filter(User.user_type=='influencer',User.flagged.is_(True)).all()
-    return render_template('admin_view_flagged_influencers.html',flagged_influencers=flagged_influencers)
-
-@app.route('/admin/flag_influencer/<int:influencer_id>')
-@auth_required
-def flag_influencer(influencer_id):
-    influencer = User.query.get_or_404(influencer_id)
-    influencer.flagged = True
-    db.session.commit()
-    flash('Influencer flagged.', 'success')
-    return redirect(url_for('admin_view_influencers'))
-
-@app.route('/admin/reinstate_influencer/<int:influencer_id>')
-@auth_required
-def reinstate_influencer(influencer_id):
-    influencer = User.query.get_or_404(influencer_id)
-    influencer.flagged = False
-    db.session.commit()
-    flash('Influencer reinstated.', 'success')
-    return redirect(url_for('admin_view_flagged_influencers'))
-
-@app.route('/admin/delete_influencer/<int:influencer_id>',methods=['POST'])
-@auth_required
-def delete_influencer(influencer_id):
-    influencer = User.query.get_or_404(influencer_id)
-    db.session.delete(influencer)
-    db.session.commit()
-    flash('Influencer deleted.', 'success')
-    return redirect(url_for('admin_view_flagged_influencers'))
-
-
-@app.route('/admin/view_item/<int:item_id>')
-@auth_required
-def view_item(item_id):
-    user=User.query.filter_by(id=item_id,flagged=True).first()
-    campaign=Campaign.query.filter_by(id=item_id,flagged=True).first()
-    item=user or campaign
-    if not item:
-        flash('Item is not found','danger')
-        return redirect(url_for('admin_dashboard'))
-    return render_template('view_item.html',item=item)
-
-@app.route('/admin/remove_item/<int:item_id>')
-@auth_required
-def remove_item(item_id):
-    user=User.query.filter_by(id=item_id,flagged=True).first()
-    campaign=Campaign.query.filter_by(id=item_id,flagged=True).first()
-    item=user or campaign
-    if not item:
-        flash('Item is not found','danger')
-        return redirect(url_for('admin_dashboard'))
-    db.session.delete(item)
-    db.session.commit()
-    flash('Item has been removed','success')
-    return render_template('view_item.html',item=item)
-
-
-
-@app.route('/influencer/dashboard')
-@auth_required
-def influencer_dashboard():
-    user_id=session.get('user_id')
-    if not user_id:
-        flash('Kindly login first')
-        return redirect(url_for('login'))
-    influencer=Influencer.query.get(user_id)
-    if not influencer:
-        flash('Not Found!','danger')
-        return redirect(url_for('login'))
-    if current_user.flagged:
-        active_campaigns = []
-        new_requests = []
-        return render_template('influencer_dashboard.html', user=influencer, details=None, active_campaigns=active_campaigns, new_requests=new_requests)
-    else:
-      details=InfluencerDetails.query.filter_by(user_id=user_id).first()
-      active_campaigns=Campaign.query.join(AdRequest).filter(AdRequest.influencer_id == user_id, AdRequest.status == 'Accepted').all()
-      new_requests = AdRequest.query.filter_by(influencer_id=user_id, status='Pending').all()
-      return render_template('influencer_dashboard.html',user=influencer,details=details,active_campaigns=active_campaigns,new_requests=new_requests)
-
-
-@app.route('/influencer/find-campaigns', methods=['GET','POST'])
-@auth_required
-def find_campaigns():
-    if current_user.flagged:
-        flash('You have been flagged by the Admin. You can not find any campaigns.','danger')
-        return redirect(url_for('influencer_dashboard'))
-    influencer_id=session.get('user_id')
-    influencer=Influencer.query.get(influencer_id)
-    niche=Influencer.niche
-    if request.method=='POST':
-        search_query=request.form.get('searchQuery','').strip()
-        campaigns = Campaign.query.filter(
-        (Campaign.visibility == 'public') |
-        ((Campaign.visibility == 'private') & (Campaign.niche == niche)) &
-        (Campaign.status != 'Completed') & (Campaign.name.ilike(f'%{search_query}%'))).all()
-    else:
-        campaigns = Campaign.query.filter(
-        (Campaign.visibility == 'public') |
-        ((Campaign.visibility == 'private') & (Campaign.niche == niche)) &
-        (Campaign.status != 'Completed')
-    ).all()
-    return render_template('find_campaigns.html',campaigns=campaigns)
-
-@app.route('/influencer/view_campaign_details/<int:campaign_id>',methods=['GET'])
-@auth_required
-def view_campaign_details(campaign_id):
-          campaign=Campaign.query.get_or_404(campaign_id)
-          ad_request=AdRequest.query.filter_by(campaign_id=campaign_id,influencer_id=current_user.id).first()
-          if ad_request is None:
-              flash("No Ad Request found for this Camapign.")
-          return render_template('view_campaign_details.html',campaign=campaign,ad_request=ad_request)
-
-@app.route('/mark_completed/<int:campaign_id>', methods=['POST'])
+# --- Investor Dashboard ---
+@app.route('/investor/dashboard')
 @login_required
-def mark_completed(campaign_id):
-    if not isinstance(current_user,Influencer):
-        return "Unauthorized",403
+def investor_dashboard():
+    if current_user.user_type != 'investor':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
     
-    campaign = Campaign.query.get_or_404(campaign_id)
-    campaign.completion_status = True
+    campaigns = FundingCampaign.query.filter_by(investor_id=current_user.id).all()
+
+    # Get all pitches related to these campaigns
+    campaign_ids = [c.id for c in campaigns]
+    pitches = PitchRequest.query.filter(PitchRequest.campaign_id.in_(campaign_ids)).all()
+
+    return render_template('investor_dashboard.html', campaigns=campaigns, pitches=pitches)
+
+
+# Create new funding campaign
+@app.route('/investor/campaign/new', methods=['GET', 'POST'])
+@login_required
+def new_funding_campaign():
+    if current_user.user_type != 'investor':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        sector = request.form['sector']
+        budget = float(request.form['budget'])
+        deadline = request.form['deadline']  # Expecting 'YYYY-MM-DD'
+
+        # Budget check vs overall_budget
+        if budget > current_user.overall_budget:
+            flash('Campaign budget exceeds your overall budget.', 'danger')
+            return redirect(url_for('new_funding_campaign'))
+
+        campaign = FundingCampaign(
+            title=title,
+            description=description,
+            sector=sector,
+            budget=budget,
+            deadline=date.fromisoformat(deadline),
+            investor_id=current_user.id
+        )
+        db.session.add(campaign)
+        db.session.commit()
+        flash('Funding campaign created.', 'success')
+        return redirect(url_for('investor_dashboard'))
+    
+    sectors = [e.value for e in SectorEnum]
+    return render_template('new_funding_campaign.html', sectors=sectors)
+
+from models import FundingCampaign  # make sure this import is present
+
+@app.route('/startup/dashboard', methods=['GET'])
+@login_required
+def startup_dashboard():
+    if current_user.user_type != 'startup':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    if check_flagged_startup():
+        return render_template('startup_flagged.html')
+
+    # 🔍 Get search parameters
+    campaign_title = request.args.get('campaign_title')
+    status = request.args.get('status')
+    min_amount = request.args.get('min_amount')
+
+    # 🔎 Base query: all pitches by this startup
+    query = PitchRequest.query.filter_by(startup_id=current_user.id)
+
+    # 🧠 Join with FundingCampaign for filtering by title
+    if campaign_title:
+        query = query.join(FundingCampaign).filter(FundingCampaign.title.ilike(f"%{campaign_title}%"))
+
+    if status:
+        query = query.filter(PitchRequest.status == status)
+
+    if min_amount:
+        try:
+            query = query.filter(PitchRequest.proposed_amount >= float(min_amount))
+        except ValueError:
+            pass  # ignore invalid input
+
+    pitch_requests = query.all()
+
+    return render_template('startup_dashboard.html', pitch_requests=pitch_requests)
+
+
+
+# View all funding campaigns to pitch on
+@app.route('/startup/campaigns')
+@login_required
+def view_campaigns():
+    if current_user.user_type != 'startup':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_startup():
+        return render_template('startup_flagged.html')
+
+    campaigns = FundingCampaign.query.filter_by(is_completed=False).all()
+    return render_template('campaigns_list.html', campaigns=campaigns)
+
+# Submit pitch request
+@app.route('/startup/pitch/new/<int:campaign_id>', methods=['GET', 'POST'])
+@login_required
+def submit_pitch(campaign_id):
+    if current_user.user_type != 'startup':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_startup():
+        return render_template('startup_flagged.html')
+
+    campaign = FundingCampaign.query.get_or_404(campaign_id)
+
+    if request.method == 'POST':
+        pitch_text = request.form['pitch_text']
+        proposed_amount = float(request.form['proposed_amount'])
+
+        # Check if proposed amount is reasonable (optional)
+        if proposed_amount > campaign.budget:
+            flash('Proposed amount exceeds campaign budget.', 'danger')
+            return redirect(url_for('submit_pitch', campaign_id=campaign_id))
+
+        pitch = PitchRequest(
+            campaign_id=campaign.id,
+            startup_id=current_user.id,
+            pitch_text=pitch_text,
+            proposed_amount=proposed_amount,
+            status='pending'
+        )
+        db.session.add(pitch)
+        db.session.commit()
+        flash('Pitch submitted successfully.', 'success')
+        return redirect(url_for('startup_dashboard'))
+
+    return render_template('submit_pitch.html', campaign=campaign)
+
+# --- Additional routes for pitch request status updates by investors ---
+@app.route('/investor/pitch/<int:pitch_id>/update', methods=['POST'])
+@login_required
+def update_pitch_status(pitch_id):
+    if current_user.user_type != 'investor':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
+
+    pitch = PitchRequest.query.get_or_404(pitch_id)
+
+    # Confirm that pitch belongs to one of this investor's campaigns
+    if pitch.campaign_relation.investor_id != current_user.id:
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('investor_dashboard'))
+
+    new_status = request.form['status']
+    if new_status not in ['pending', 'accepted', 'rejected', 'completed']:
+        flash('Invalid status.', 'danger')
+        return redirect(url_for('investor_dashboard'))
+
+    pitch.status = new_status
     db.session.commit()
-    flash('Campaign marked as completed.', 'success')
-    return redirect(url_for('influencer_dashboard'))
+    flash(f'Pitch status updated to {new_status}.', 'success')
+    return redirect(url_for('investor_dashboard'))
 
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
 
+        # Check if username already taken by another user
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user and existing_user.id != current_user.id:
+            flash('Username already taken.', 'danger')
+            return redirect(url_for('profile'))
 
+        current_user.username = username
+        if password:
+            current_user.passhash = generate_password_hash(password)
 
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('profile'))
 
-@app.route('/sponsor/dashboard')
-@auth_required
-def sponsor_dashboard():
-    user_id=session.get('user_id')
-    if not user_id:
-        flash('Kindly login first')
-        return redirect(url_for('login'))
-    sponsor=Sponsor.query.get(user_id)
-    if not sponsor:
-        flash('Not Found!','danger')
-        return redirect(url_for('login'))
-    campaigns = Campaign.query.filter(Campaign.sponsor_id == sponsor.id).all()
-    active_campaigns = [campaign for campaign in campaigns if campaign.status not in ['Completed', 'Payment Completed']]
-    new_requests=AdRequest.query.join(Campaign).filter(Campaign.sponsor_id==sponsor.id,AdRequest.status=='Pending').all()
-    total_allocated_budget=sum(campaign.budget for campaign in active_campaigns if campaign.status !='Completed')
-    remaining_budget=sponsor.overall_budget-total_allocated_budget
-    return render_template('sponsor_dashboard.html',user=sponsor,active_campaigns=active_campaigns,new_requests=new_requests,remaining_budget=remaining_budget)
+    return render_template('profile.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user_type = request.form['user_type']
 
-@app.route('/sponsor/create-campaign',methods=(['GET','POST']))
-@auth_required
-def create_campaign():
-    sponsor_id=session.get('user_id')
-    sponsor=Sponsor.query.get(sponsor_id)
+        if user_type == 'investor':
+            industry = request.form.get('industry')
+            overall_budget = float(request.form.get('overall_budget', 0))
+            # create investor user
+            investor = Investor(
+                username=username,
+                passhash=generate_password_hash(password),
+                name=username,
+                industry=industry,
+                overall_budget=overall_budget
+            )
+            db.session.add(investor)
+            db.session.commit()
 
-    if request.method=='POST':
-        name=request.form.get('name')
-        description=request.form.get('description')
-        start_date_str=request.form.get('start_date')
-        end_date_str=request.form.get('end_date')
-        visibility = request.form.get('visibility')
-        budget = float(request.form.get('budget'))
-        start_date=datetime.strptime(start_date_str,'%Y-%m-%d').date()
-        end_date=datetime.strptime(end_date_str,'%Y-%m-%d').date()
-        total_existing_budget=sum(campaign.budget for campaign in sponsor.sponsor_campaigns)
-        if total_existing_budget + budget >sponsor.overall_budget:
-            flash('Camapign Budget has exceeded the overall budget limit.','danger')
-            return redirect(url_for('create_campaign'))
+        elif user_type == 'startup':
+            platform = request.form.get('platform')
+            sector = request.form.get('sector')
+            traction = request.form.get('traction')
+            revenue = request.form.get('revenue')
 
-        if visibility=='private':
-            niche=request.form.get('niche')
-            new_campaign=Campaign(name=name,description=description,start_date=start_date,
-                              end_date=end_date,visibility =visibility , budget = budget ,sponsor_id=sponsor_id,niche=niche)
+            startup = Startup(
+                username=username,
+                passhash=generate_password_hash(password),
+                name=username,
+                platform=platform,
+                sector=sector,
+                traction=int(traction) if traction else None,
+                revenue=float(revenue) if revenue else None
+            )
+            db.session.add(startup)
+            db.session.commit()
+
         else:
-            new_campaign=Campaign(name=name,description=description,start_date=start_date,
-                              end_date=end_date,visibility =visibility , budget = budget ,sponsor_id=sponsor_id)
-            
+            # Handle invalid user_type or other user types if any
+            pass
 
-        db.session.add(new_campaign)
-        db.session.commit()
-        flash("Campaign has been created","success")
-        return redirect(url_for('sponsor_dashboard'))
-    else:
-        return render_template('new_campaign.html')
+        flash("Registration successful!", "success")
+        return redirect(url_for('login'))
 
-@app.route('/sponsor/update_campaign/<int:campaign_id>',methods=(['GET','POST']))
+    return render_template('register.html')
+
+
+from models import Admin  # not User
+from werkzeug.security import generate_password_hash
+
+@app.route('/create_admin')
+def create_admin():
+    from models import db
+
+    if Admin.query.filter_by(username='admin').first():
+        return "Admin already exists."
+
+    admin_user = Admin(
+        username='admin',
+        passhash=generate_password_hash('admin123')
+    )
+    db.session.add(admin_user)
+    db.session.commit()
+    return "Admin user created successfully."
+
+
+# Route to manage startups (Admin only)
+@app.route('/admin/manage_startups')
 @login_required
-def update_campaign(campaign_id):
-    campaign=Campaign.query.get(campaign_id)
-    if not campaign:
-        flash('Campaign not found.')
-        return redirect(url_for('sponsor_dashboard'))
-    if request.method=='GET':
-        return render_template('edit_campaign.html',campaign=campaign)
-    elif request.method=='POST':
-        campaign.name = request.form.get('name')
-        campaign.description = request.form.get('description')
-        campaign.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
-        campaign.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date()
-        campaign.visibility = request.form.get('visibility')
-        campaign.budget = float(request.form.get('budget'))
-        if campaign.visibility=='private':
-            campaign.niche=request.form.get('niche')
-        db.session.commit()
-        flash("Campaign has been updated","success")
-        return redirect(url_for('sponsor_dashboard'))
-    return render_template('edit_campaign.html', campaign=campaign)
+def manage_startups():
+    if not current_user.is_administrator():
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    startups = Startup.query.all()
+    return render_template('manage_startups.html', startups=startups)
 
-
-@app.route('/sponsor/delete_campaign/<int:campaign_id>', methods=['GET','POST'])
+# Route to manage campaigns (Admin only)
+@app.route('/admin/manage_campaigns')
 @login_required
-def delete_campaign(campaign_id):
-    campaign=Campaign.query.get_or_404(campaign_id)
-    if not campaign:
-        flash('Campaign not found.')
-        return redirect(url_for('sponsor_dashboard'))
+def manage_campaigns():
+    if not current_user.is_administrator():
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    campaigns = FundingCampaign.query.all()
+    return render_template('manage_campaigns.html', campaigns=campaigns)
+
+# Route to view reports (Admin only)
+@app.route('/admin/reports')
+@login_required
+def admin_reports():
+    if not current_user.is_administrator():
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    # You can compute whatever statistics you want here
+    total_users = User.query.count()
+    total_campaigns = FundingCampaign.query.count()
+    total_pitches = PitchRequest.query.count()
+    return render_template('admin_reports.html', total_users=total_users,
+                           total_campaigns=total_campaigns,
+                           total_pitches=total_pitches)
+
+@app.route('/admin/manage_investors')
+@login_required
+def manage_investors():
+    if not current_user.is_administrator():
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    investors = User.query.filter_by(user_type='investor').all()
+    return render_template('manage_investors.html', investors=investors)
+
+
+
+@app.route('/campaign/<int:campaign_id>')
+@login_required
+def view_campaign(campaign_id):
+    campaign = FundingCampaign.query.get_or_404(campaign_id)
+
+    amount_raised = db.session.query(db.func.coalesce(db.func.sum(PitchRequest.proposed_amount), 0)) \
+        .filter(PitchRequest.campaign_id == campaign_id, PitchRequest.status == 'accepted').scalar()
+
+    return render_template('view_campaign.html', campaign=campaign, amount_raised=amount_raised)
+
+@app.route('/investor/campaign/edit/<int:campaign_id>', methods=['GET', 'POST'])
+@login_required
+def edit_funding_campaign(campaign_id):
+    if current_user.user_type != 'investor':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
+    
+    campaign = FundingCampaign.query.get_or_404(campaign_id)
+
+    if campaign.investor_id != current_user.id:
+        flash('You cannot edit this campaign.', 'danger')
+        return redirect(url_for('investor_dashboard'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        sector = request.form['sector']
+        budget = float(request.form['budget'])
+        deadline = request.form['deadline']
+
+        # Check budget vs overall_budget (allow update if within budget)
+        if budget > current_user.overall_budget:
+            flash('Budget exceeds your overall budget.', 'danger')
+            return redirect(url_for('edit_funding_campaign', campaign_id=campaign_id))
+
+        campaign.title = title
+        campaign.description = description
+        campaign.sector = sector
+        campaign.budget = budget
+        campaign.deadline = date.fromisoformat(deadline)
+
+        db.session.commit()
+        flash('Campaign updated successfully.', 'success')
+        return redirect(url_for('investor_dashboard'))
+
+    sectors = [e.value for e in SectorEnum]
+    return render_template('edit_funding_campaign.html', campaign=campaign, sectors=sectors)
+
+@app.route('/investor/campaign/delete/<int:campaign_id>', methods=['POST'])
+@login_required
+def delete_funding_campaign(campaign_id):
+    if current_user.user_type != 'investor':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
+
+    campaign = FundingCampaign.query.get_or_404(campaign_id)
+
+    if campaign.investor_id != current_user.id:
+        flash('You cannot delete this campaign.', 'danger')
+        return redirect(url_for('investor_dashboard'))
+
     db.session.delete(campaign)
     db.session.commit()
-    flash("Campaign has been deleted","success")
-    return redirect(url_for('sponsor_dashboard'))
+    flash('Campaign deleted successfully.', 'success')
+    return redirect(url_for('investor_dashboard'))
 
-@app.route('/edit_ad_request/<int:request_id>', methods=['GET', 'POST'])
+@app.route('/investor/pitch/<int:pitch_id>/pay', methods=['GET', 'POST'])
 @login_required
-def edit_ad_request(request_id):
-    ad_request = AdRequest.query.get(request_id)
-    if not ad_request:
-        flash('Ad request not found.')
-        return redirect(url_for('sponsor_dashboard'))
+def pay_pitch(pitch_id):
+    if current_user.user_type != 'investor':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
 
-    if request.method == 'GET':
-        return render_template('edit_ad_request.html', ad_request=ad_request)
+    pitch = PitchRequest.query.get_or_404(pitch_id)
+    campaign = pitch.campaign_relation
 
-    elif request.method == 'POST':
-        ad_request.requirements = request.form.get('requirements')
-        ad_request.payment_amount = request.form.get('payment_amount')
-        db.session.commit()
-        flash('Ad request updated successfully.')
-        return redirect(url_for('sponsor_dashboard'))
+    if campaign.investor_id != current_user.id:
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('investor_dashboard'))
 
-@app.route('/sponsor/delete_ad_request/<int:request_id>', methods=['GET','POST'])
-@login_required
-def delete_ad_request(request_id):
-    ad_request=AdRequest.query.get(request_id)
-    if not ad_request:
-        flash('Ad Request not found.')
-        return redirect(url_for('sponsor_dashboard'))
-    db.session.delete(ad_request)
-    db.session.commit()
-    flash("Ad Request has been deleted","success")
-    return redirect(url_for('sponsor_dashboard'))
-
-@app.route('/sponsor/create_ad_request/<int:campaign_id>/<int:influencer_id>', methods=['GET', 'POST'])
-@auth_required
-def create_ad_request(campaign_id, influencer_id):
-    influencer = Influencer.query.get_or_404(influencer_id)
-    campaign = Campaign.query.get_or_404(campaign_id)
     if request.method == 'POST':
-        requirements = request.form.get('requirements')
-        payment_amount = request.form.get('payment_amount')
-        
-        if not payment_amount:
-            flash('Payment amount is required.')
-            return redirect(url_for('create_ad_request', campaign_id=campaign_id, influencer_id=influencer_id))
-        
-        try:
-            payment_amount = float(payment_amount)
-        except ValueError:
-            flash('Invalid payment amount.')
-            return redirect(url_for('create_ad_request', campaign_id=campaign_id, influencer_id=influencer_id))
-        
-        status = 'Pending'
-        new_ad_request = AdRequest(campaign_id=campaign_id, influencer_id=influencer_id, requirements=requirements, payment_amount=payment_amount, status=status)
-        db.session.add(new_ad_request)
-        db.session.commit()
-        
-        flash("Ad Request has been created", "success")
-        return redirect(url_for('sponsor_dashboard'))
-    if influencer.flagged:
-        flash('You cannot create ad requests for this influencer because they are flagged.', 'danger')
-        return redirect(url_for('find_influencers'))
-    return render_template('new_ad_request.html', campaign=campaign, influencer=influencer)
+        amount = float(request.form['amount'])
+        # For dummy payment just accept amount and show success message
+        if amount <= 0:
+            flash('Amount must be positive.', 'danger')
+            return redirect(url_for('pay_pitch', pitch_id=pitch_id))
+        if amount > pitch.proposed_amount:
+            flash('Payment amount exceeds proposed amount.', 'danger')
+            return redirect(url_for('pay_pitch', pitch_id=pitch_id))
+
+        # Here you can record payment in DB if you have payment model
+        flash(f'Dummy payment of ₹{amount} to startup {pitch.startup_relation.username} successful!', 'success')
+        return redirect(url_for('investor_dashboard'))
+
+    return render_template('pay_pitch.html', pitch=pitch)
+
+@app.route('/investor/pitch/<int:pitch_id>/mark_paid', methods=['POST'])
+@login_required
+def mark_pitch_paid(pitch_id):
+    pitch = PitchRequest.query.get_or_404(pitch_id)
     
-@app.route('/confirm_completion/<int:campaign_id>', methods=['POST'])
-@login_required
-def confirm_completion(campaign_id):
-    if not isinstance(current_user,Sponsor):
-        return "Unauthorized",403
+    # Only the investor who owns the campaign can mark it as paid
+    if pitch.campaign_relation.investor_id != current_user.id:
+        flash("Unauthorized action.", "danger")
+        return redirect(url_for('investor_dashboard'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
     
-    campaign = Campaign.query.get_or_404(campaign_id)
-    if campaign:
-        campaign.completion_status = True
-        campaign.status='Completed'
-        db.session.commit()
-        flash('Campaign completion confirmed!', 'success')
-    return redirect(url_for('sponsor_dashboard'))
+    pitch.is_paid = True
+    db.session.commit()
+    flash("Payment marked as done.", "success")
+    return redirect(url_for('investor_dashboard'))
 
-
-
-
-@app.route('/sponsor/find-influencers',methods=['GET','POST'])
-@auth_required
-def find_influencers():
-    influencers=[]
-    campaigns=Campaign.query.all()
-    if request.method=='POST':
-        niche=request.form.get('niche')
-        min_followers = request.form.get('min_followers', 0)
-        campaign_id=request.form.get('campaign_id')
-        query=Influencer.query.filter(Influencer.flagged==False)
-        if niche:
-            query=query.filter(Influencer.niche.ilike(f"%{niche}%"))
-        if min_followers:
-            query.filter(Influencer.followers >= int(min_followers))
-        
-        influencers=query.all()    
-        campaigns = Campaign.query.all() 
-        return render_template('find_influencers.html',influencers=influencers,campaign_id=campaign_id,campaigns=campaigns)
-    return render_template('find_influencers.html',campaigns=campaigns)
-
-
-
-@app.route('/sponsor/view_influencer/<int:influencer_id>')
-@auth_required
-def view_influencer(influencer_id):
-          influencer=Influencer.query.get_or_404(influencer_id)
-          return render_template('view_influencer.html',influencer=influencer)
-
-@app.route('/sponsor/view_campaign/<int:campaign_id>',methods=['GET','POST'])
-@auth_required
-def view_campaign(campaign_id):
-          campaign=Campaign.query.get_or_404(campaign_id)
-          ad_request=AdRequest.query.filter_by(campaign_id=campaign_id).first()
-          if request.method=='POST':
-                 ad_name=request.form.get('ad_name')
-                 description=request.form.get('description')
-                 terms=request.form.get('terms')
-                 payment=request.form.get('payment')
-                 influencer_id=request.form.get('influencer_id')
-                 combined_description = f"Ad Name: {ad_name}\nDescription: {description}\nTerms: {terms}"
-                 new_ad_request=AdRequest(requirements=combined_description,campaign_id=campaign_id,influencer_id=influencer_id,payment_amount=payment,status='Pending')
-                 db.session.add(new_ad_request)
-                 db.session.commit()
-                 flash("Ad Request created successfully")
-                 return redirect(url_for('sponsor_dashboard'))
-
-          return render_template('view_campaign.html',campaign=campaign,ad_request=ad_request)
-
-
-
-@app.route('/ad_request/<int:request_id>',methods=['GET','POST'])
-@auth_required
-def view_ad_request(request_id):
-          ad_request=AdRequest.query.get_or_404(request_id)
-          influencers=Influencer.query.all()
-          if request.method=='POST':
-              influencer_id=request.form.get('influencer_id')
-              ad_request.influencer_id=influencer_id
-              db.session.commit()
-              flash('Influencer assigned successfully',"success")
-              return redirect(url_for('sponsor_dashboard'))
-          
-          return render_template('view_ad_request.html',ad_request=ad_request,influencers=influencers)
-
-
-
-@app.route('/request/<int:request_id>/view', methods=['GET'])
+@app.route('/investor/pitch/<int:pitch_id>/make_payment', methods=['POST'])
 @login_required
-def view_request(request_id):
-    ad_request = AdRequest.query.get_or_404(request_id)
-    if ad_request.influencer_id != current_user.id:
-        flash("Unauthorized action")
-        return redirect(url_for('influencer_dashboard'))
-    campaign = Campaign.query.get(ad_request.campaign_id)
-    return render_template('view_request.html',request=ad_request,campaign=campaign)
+def make_payment(pitch_id):
+    if current_user.user_type != 'investor':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+    if check_flagged_investor():
+        return render_template('investor_flagged.html')
 
+    pitch = PitchRequest.query.get_or_404(pitch_id)
 
+    # Confirm the campaign belongs to the current investor
+    if pitch.campaign_relation.investor_id != current_user.id:
+        flash('Unauthorized action.', 'danger')
+        return redirect(url_for('investor_dashboard'))
 
+    pitch.is_paid = True
+    db.session.commit()
+    flash('Payment marked as completed.', 'success')
+    return redirect(url_for('investor_dashboard'))
 
-@app.route('/request/<int:request_id>/accept', methods=['GET','POST'])
-@login_required
-def accept_request(request_id):
-    ad_request = AdRequest.query.get_or_404(request_id)
-    if ad_request.influencer_id != current_user.id:
-        flash("Unauthorized action")
-        return redirect(url_for('influencer_dashboard'))
-    if request.method=='POST':
-        ad_request.status='Accepted'
-        db.session.commit()
-        flash("Ad Request Accepted")
-        return redirect(url_for('influencer_dashboard'))
-    return render_template('accept_request.html',request=ad_request)
+from flask import jsonify
 
-   
+# Utility decorator for admin check
+def admin_required(f):
+    @login_required
+    def wrapper(*args, **kwargs):
+        if not current_user.is_administrator():
+            flash('Unauthorized access.', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
 
+# Flag/Unflag Investor
+@app.route('/admin/investor/<int:investor_id>/flag', methods=['POST'])
+@admin_required
+def flag_investor(investor_id):
+    investor = Investor.query.get_or_404(investor_id)
+    investor.flagged = not investor.flagged  # toggle flag
+    db.session.commit()
+    status = 'flagged' if investor.flagged else 'unflagged'
+    flash(f'Investor {investor.name} has been {status}.', 'success')
+    return redirect(url_for('manage_investors'))
 
-@app.route('/request/<int:request_id>/reject', methods=['GET','POST'])
-@login_required
-def reject_request(request_id):
-    ad_request = AdRequest.query.get_or_404(request_id)
-    if ad_request.influencer_id != current_user.id:
-        flash("Unauthorized action")
-        return redirect(url_for('influencer_dashboard'))
-    if request.method=='POST':
-        ad_request.status='Rejected'
-        db.session.commit()
-        flash("Ad Request Rejected")
-        return redirect(url_for('influencer_dashboard'))
-    return render_template('reject_request.html',request=ad_request)
-    
-@app.route('/completed_requests')
-@login_required
-def completed_requests():
-    if not isinstance(current_user,Sponsor):
-        return "Unauthorized", 403
-    completed_campaigns=Campaign.query.filter(Campaign.sponsor_id==current_user.id, Campaign.status.in_(['Completed','Payment Completed'])).all()
-    return render_template('completed_requests.html', completed_campaigns= completed_campaigns)
-    
+# Delete Investor
+@app.route('/admin/investor/<int:investor_id>/delete', methods=['POST'])
+@admin_required
+def delete_investor(investor_id):
+    investor = Investor.query.get_or_404(investor_id)
+    db.session.delete(investor)
+    db.session.commit()
+    flash(f'Investor {investor.name} has been deleted.', 'success')
+    return redirect(url_for('manage_investors'))
 
+# Flag/Unflag Startup
+@app.route('/admin/startup/<int:startup_id>/flag', methods=['POST'])
+@admin_required
+def flag_startup(startup_id):
+    startup = Startup.query.get_or_404(startup_id)
+    startup.flagged = not startup.flagged
+    db.session.commit()
+    status = 'flagged' if startup.flagged else 'unflagged'
+    flash(f'Startup {startup.name} has been {status}.', 'success')
+    return redirect(url_for('manage_startups'))
 
+# Delete Startup
+@app.route('/admin/startup/<int:startup_id>/delete', methods=['POST'])
+@admin_required
+def delete_startup(startup_id):
+    startup = Startup.query.get_or_404(startup_id)
+    db.session.delete(startup)
+    db.session.commit()
+    flash(f'Startup {startup.name} has been deleted.', 'success')
+    return redirect(url_for('manage_startups'))
 
-@app.route('/make_payment/<int:campaign_id>', methods=['GET','POST'])
-@login_required
-def make_payment(campaign_id):
-     if not isinstance(current_user,Sponsor):
-        return "Unauthorized", 403
-     campaign = Campaign.query.get_or_404(campaign_id)
-     if request.method=='POST':
-        card_number=request.form['card_number']
-        expiration_date=request.form['expiration_date']
-        cvv=request.form['cvv']
-        campaign.status='Payment Completed'
-        db.session.commit()
-        flash("Payment Successfully done",'sucess')
-        return redirect(url_for('completed_requests'))
-     return render_template('make_payment.html',campaign=campaign)
+@app.route('/find_startups', methods=['GET'])
+def find_startups():
+    sector = request.args.get('sector')
+    revenue = request.args.get('revenue')
+    traction = request.args.get('traction')
+    platform = request.args.get('platform')
 
+    # Build base query
+    query = Startup.query
 
-password = 'admin'  
-password_hash = generate_password_hash(password)
-print(password_hash)
+    if sector:
+        query = query.filter(Startup.sector.ilike(f"%{sector}%"))
+    if revenue:
+        query = query.filter(Startup.revenue >= float(revenue))
+    if traction:
+        query = query.filter(Startup.traction.ilike(f"%{traction}%"))
+    if platform:
+        query = query.filter(Startup.platform.ilike(f"%{platform}%"))
 
+    startups = query.all()
 
-
-
-
-
-
+    return render_template('find_startups.html', startups=startups)

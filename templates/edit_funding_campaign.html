@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% block title %}Edit Campaign{% endblock %}
+
+{% block content %}
+<h2>Edit Funding Campaign</h2>
+<form method="POST">
+  <div class="mb-3">
+    <label for="title" class="form-label">Title</label>
+    <input type="text" name="title" id="title" class="form-control" value="{{ campaign.title }}" required>
+  </div>
+  <div class="mb-3">
+    <label for="description" class="form-label">Description</label>
+    <textarea name="description" id="description" class="form-control" required>{{ campaign.description }}</textarea>
+  </div>
+  <div class="mb-3">
+    <label for="sector" class="form-label">Sector</label>
+    <select name="sector" id="sector" class="form-select" required>
+      {% for s in sectors %}
+      <option value="{{ s }}" {% if campaign.sector.value == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label for="budget" class="form-label">Budget (₹)</label>
+    <input type="number" step="0.01" name="budget" id="budget" class="form-control" value="{{ campaign.budget }}" required>
+  </div>
+  <div class="mb-3">
+    <label for="deadline" class="form-label">Deadline</label>
+    <input type="date" name="deadline" id="deadline" class="form-control" value="{{ campaign.deadline.strftime('%Y-%m-%d') }}" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Update Campaign</button>
+  <a href="{{ url_for('investor_dashboard') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

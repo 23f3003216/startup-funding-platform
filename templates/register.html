@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 600px;">
+  <h2 class="mb-4 text-center">Register</h2>
+
+  <form method="POST" action="{{ url_for('register') }}">
+    <div class="mb-3">
+      <label for="username" class="form-label">Username</label>
+      <input type="text" class="form-control" id="username" name="username" required placeholder="Enter username">
+    </div>
+
+    <div class="mb-3">
+      <label for="password" class="form-label">Password</label>
+      <input type="password" class="form-control" id="password" name="password" required placeholder="Enter password">
+    </div>
+
+    <div class="mb-3">
+      <label for="user_type" class="form-label">User Type</label>
+      <select class="form-select" id="user_type" name="user_type" required onchange="toggleUserFields()">
+        <option value="" disabled selected>Select user type</option>
+        <option value="investor">Investor</option>
+        <option value="startup">Startup</option>
+      </select>
+    </div>
+
+    <!-- Investor fields -->
+    <div id="investor_fields" style="display:none;">
+      <div class="mb-3">
+        <label for="industry" class="form-label">Industry</label>
+        <input type="text" class="form-control" id="industry" name="industry" placeholder="Enter your industry">
+      </div>
+      <div class="mb-3">
+        <label for="overall_budget" class="form-label">Overall Budget</label>
+        <input type="number" step="0.01" min="0" class="form-control" id="overall_budget" name="overall_budget" placeholder="Enter your budget">
+      </div>
+      <div class="mb-3">
+        <label for="investor_email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="investor_email" name="email" placeholder="Enter your email">
+      </div>
+      <div class="mb-3">
+        <label for="investor_phone" class="form-label">Phone</label>
+        <input type="tel" class="form-control" id="investor_phone" name="phone" placeholder="Enter your phone number">
+      </div>
+    </div>
+
+    <!-- Startup fields -->
+    <div id="startup_fields" style="display:none;">
+      <div class="mb-3">
+        <label for="platform" class="form-label">Platform</label>
+        <select class="form-select" id="platform" name="platform">
+          <option value="" disabled selected>Select platform</option>
+          <option value="Website">Website</option>
+          <option value="App">App</option>
+          <option value="Both">Both</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="sector" class="form-label">Sector</label>
+        <select class="form-select" id="sector" name="sector">
+          <option value="" disabled selected>Select sector</option>
+          <option value="AI">AI</option>
+          <option value="FINTECH">FinTech</option>
+          <option value="EDTECH">EdTech</option>
+          <option value="HEALTHCARE">Healthcare</option>
+          <option value="AGRITECH">AgriTech</option>
+          <option value="SUSTAINABILITY">Sustainability</option>
+          <option value="LOGISTICS">Logistics</option>
+          <option value="ECOMMERCE">E-commerce</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="traction" class="form-label">Traction (number)</label>
+        <input type="number" min="0" class="form-control" id="traction" name="traction" placeholder="Enter traction">
+      </div>
+      <div class="mb-3">
+        <label for="revenue" class="form-label">Revenue</label>
+        <input type="number" step="0.01" min="0" class="form-control" id="revenue" name="revenue" placeholder="Enter revenue">
+      </div>
+      <div class="mb-3">
+        <label for="startup_email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="startup_email" name="email" placeholder="Enter your email">
+      </div>
+      <div class="mb-3">
+        <label for="startup_phone" class="form-label">Phone</label>
+        <input type="tel" class="form-control" id="startup_phone" name="phone" placeholder="Enter your phone number">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success w-100 mt-3">Register</button>
+  </form>
+
+  <p class="mt-4 text-center">
+    Already have an account? <a href="{{ url_for('login') }}">Login here</a>.
+  </p>
+</div>
+
+<script>
+  function toggleUserFields() {
+    var userType = document.getElementById('user_type').value;
+    document.getElementById('investor_fields').style.display = userType === 'investor' ? 'block' : 'none';
+    document.getElementById('startup_fields').style.display = userType === 'startup' ? 'block' : 'none';
+  }
+</script>
+{% endblock %}
